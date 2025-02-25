@@ -15,6 +15,8 @@ A Python CLI tool that uses LLMs to analyze tasks, break them down into manageab
 - Input from command line or files
 - Optional web search for additional context
 - Outputs to stdout or file
+- Split phases into individual files for easier management
+- Filename generation based on intelligent task summarization
 - Configurable via CLI arguments, environment variables, or .env file
 
 ## Installation
@@ -66,6 +68,18 @@ python -m taskspec.main "Build a REST API for a book inventory system" --cache-t
 
 # Clear cache before running
 python -m taskspec.main "Build a REST API for a book inventory system" --clear-cache
+
+# Split design phases into separate files during generation
+python -m taskspec.main design "Design a weather monitoring system" --split-phases
+
+# Split design phases with custom output directory 
+python -m taskspec.main design "Design a weather monitoring system" --split-phases --output-dir phases/
+
+# Split an existing phases file
+python -m taskspec.main split weather_system_20250225_phases.md
+
+# Split with custom prefix and output directory
+python -m taskspec.main split weather_system_20250225_phases.md --prefix weather_app --output-dir implementation/
 
 # Suppress stdout output (only write to file)
 python -m taskspec.main "Build a REST API for a book inventory system" --output book_api.spec.md --no-stdout

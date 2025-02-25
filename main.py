@@ -29,7 +29,7 @@ from llm import setup_llm_client
 from analyzer import analyze_task
 from design import analyze_design_document, format_subtask_for_analysis
 from template import render_template
-from utils import sanitize_filename, format_design_results, generate_task_summary
+from utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
 from cache import get_cache_manager
 
 # Initialize Typer app
@@ -239,6 +239,12 @@ def design(
     analyze_subtasks: bool = typer.Option(
         False, "--analyze-subtasks", help="Analyze each subtask and generate specifications"
     ),
+    split_phases: bool = typer.Option(
+        False, "--split-phases", help="Split phases into separate files"
+    ),
+    output_dir: Optional[Path] = typer.Option(
+        None, "--output-dir", "-d", help="Directory for split phase files (default: same as output file)"
+    ),
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Enable verbose output"
     ),
@@ -380,8 +386,69 @@ def design(
                 output_file.write_text(output_content)
                 if verbose or not no_stdout:
                     console.print(f"\nResults saved to: [bold green]{output_file}[/bold green]")
+                
+                # Split phases if requested
+                if split_phases:
+                    if verbose:
+                        console.print("\n[bold]Splitting phases into separate files...[/bold]")
+                    
+                    created_files = split_phases_to_files(
+                        phases_file=output_file,
+                        output_dir=output_dir,
+                        prefix=None  # Use default prefix based on filename
+                    )
+                    
+                    if verbose:
+                        console.print(f"\n[bold green]Successfully split into {len(created_files)} files:[/bold green]")
+                        for file_path in created_files:
+                            console.print(f"  - {file_path}")
             
             return 0
+    
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+        if verbose:
+            import traceback
+            console.print(traceback.format_exc())
+        return 1
+
+@app.command()
+def split(
+    phases_file: Path = typer.Argument(..., help="Path to the phases markdown file"),
+    output_dir: Optional[Path] = typer.Option(
+        None, "--output-dir", "-d", help="Directory for output files (default: same directory as input)"
+    ),
+    prefix: Optional[str] = typer.Option(
+        None, "--prefix", "-p", help="Prefix for output filenames (default: derived from input filename)"
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output"
+    ),
+):
+    """
+    Split a phases markdown file into separate files for each phase.
+    """
+    try:
+        if not phases_file.exists():
+            console.print(f"[bold red]Error:[/bold red] Phases file not found: {phases_file}")
+            return 1
+            
+        # Split the phases file
+        if verbose:
+            console.print(f"Splitting phases from: [bold]{phases_file}[/bold]")
+            
+        created_files = split_phases_to_files(
+            phases_file=phases_file,
+            output_dir=output_dir,
+            prefix=prefix
+        )
+        
+        if verbose:
+            console.print(f"\n[bold green]Successfully split into {len(created_files)} files:[/bold green]")
+            for file_path in created_files:
+                console.print(f"  - {file_path}")
+                
+        return 0
     
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")

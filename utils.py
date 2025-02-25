@@ -84,6 +84,107 @@ Concise summary:"""
         # Fallback to traditional approach on error
         return sanitize_filename(task_content[:30])
 
+def extract_phases_from_markdown(markdown_content: str) -> List[Dict[str, str]]:
+    """
+    Extract individual phases from a markdown phases document.
+    
+    Args:
+        markdown_content: The markdown content to parse
+        
+    Returns:
+        List of dictionaries with phase details
+    """
+    phases = []
+    
+    # Find all phase headers
+    phase_headers = re.finditer(r'## Phase \d+/\d+: (.+?)\n', markdown_content)
+    phase_positions = [(m.start(), m.group(1).strip()) for m in phase_headers]
+    
+    # If no phases with the X/Y format are found, try finding regular phases
+    if not phase_positions:
+        phase_headers = re.finditer(r'## Phase \d+: (.+?)\n', markdown_content)
+        phase_positions = [(m.start(), m.group(1).strip()) for m in phase_headers]
+    
+    # If still no phases found, try generic h2 headers
+    if not phase_positions:
+        phase_headers = re.finditer(r'## (.+?)\n', markdown_content)
+        phase_positions = [(m.start(), m.group(1).strip()) for m in phase_headers]
+    
+    if not phase_positions:
+        return phases
+    
+    # Extract content for each phase
+    for i, (start_pos, phase_name) in enumerate(phase_positions):
+        # Determine end position (next phase or end of file)
+        end_pos = len(markdown_content)
+        if i < len(phase_positions) - 1:
+            end_pos = phase_positions[i+1][0]
+        
+        # Extract phase content
+        phase_content = markdown_content[start_pos:end_pos].strip()
+        
+        phases.append({
+            'name': phase_name,
+            'content': phase_content,
+            'position': i + 1
+        })
+    
+    return phases
+
+def split_phases_to_files(phases_file: Path, output_dir: Optional[Path] = None, prefix: Optional[str] = None) -> List[Path]:
+    """
+    Split a phases markdown file into separate files.
+    
+    Args:
+        phases_file: Path to the phases markdown file
+        output_dir: Optional directory to output files (defaults to same directory as input)
+        prefix: Optional prefix for the output files
+        
+    Returns:
+        List of paths to the created files
+    """
+    if not phases_file.exists():
+        raise FileNotFoundError(f"Phases file not found: {phases_file}")
+    
+    # Read the phases file
+    content = phases_file.read_text()
+    
+    # Extract phases
+    phases = extract_phases_from_markdown(content)
+    
+    if not phases:
+        raise ValueError("No phases found in the markdown file")
+    
+    # Determine output directory
+    if output_dir is None:
+        output_dir = phases_file.parent
+    else:
+        os.makedirs(output_dir, exist_ok=True)
+    
+    # Determine prefix
+    if prefix is None:
+        # Use the original filename without the _phases.md suffix
+        base_name = phases_file.stem
+        if base_name.endswith('_phases'):
+            base_name = base_name[:-7]  # Remove _phases suffix
+        prefix = base_name
+    
+    # Create files for each phase
+    created_files = []
+    for phase in phases:
+        # Sanitize phase name for filename
+        phase_name_sanitized = sanitize_filename(phase['name'])
+        
+        # Create filename
+        phase_filename = f"{prefix}_phase{phase['position']}_{phase_name_sanitized}.md"
+        phase_path = output_dir / phase_filename
+        
+        # Write phase content
+        phase_path.write_text(phase['content'])
+        created_files.append(phase_path)
+    
+    return created_files
+
 def format_design_results(results: Dict[str, Any], format_type: str, include_specs: bool = False) -> str:
     """
     Format design analysis results based on the requested format.

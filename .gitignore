@@ -82,6 +82,7 @@ Thumbs.db
 # Project specific
 *.spec.md
 *_phases.md
+specs/
 .taskspec/
 cache.db
 
