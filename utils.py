@@ -34,6 +34,56 @@ def sanitize_filename(filename: str) -> str:
     
     return sanitized
 
+def generate_task_summary(task_content: str, llm_config: Dict[str, Any]) -> str:
+    """
+    Generate a concise summary of a task for use in filenames.
+    
+    Args:
+        task_content: The full task description
+        llm_config: LLM configuration
+        
+    Returns:
+        str: A concise summary (3-5 words)
+    """
+    # If task is very short, just return it
+    if len(task_content) < 40:
+        return task_content.strip()
+    
+    # Create a prompt for task summarization
+    prompt = f"""Summarize the following task in 3-5 words to use as a filename (avoid special characters, just use basic words):
+
+{task_content}
+
+Concise summary:"""
+    
+    try:
+        # Import the complete function here to avoid circular imports
+        from llm import complete
+        
+        # Call the LLM with a low token count since we just need a short summary
+        summary = complete(
+            llm_config=llm_config,
+            prompt=prompt,
+            temperature=0.3,
+            max_tokens=20
+        )
+        
+        # Clean up the summary
+        summary = summary.strip()
+        summary = re.sub(r'[^\w\s-]', '', summary)  # Remove any special chars
+        summary = re.sub(r'\s+', '_', summary)  # Replace spaces with underscores
+        
+        # Fallback if summary is empty
+        if not summary:
+            # Take the first few words of the task
+            words = task_content.split()
+            summary = "_".join(words[:3])
+        
+        return summary
+    except Exception as e:
+        # Fallback to traditional approach on error
+        return sanitize_filename(task_content[:30])
+
 def format_design_results(results: Dict[str, Any], format_type: str, include_specs: bool = False) -> str:
     """
     Format design analysis results based on the requested format.
@@ -68,7 +118,7 @@ def format_design_results_markdown(results: Dict[str, Any], include_specs: bool 
     
     # Add phases
     for i, phase in enumerate(results['phases'], 1):
-        md += f"## Phase {i}: {phase['name']}\n\n"
+        md += f"## Phase {i}/{len(results['phases'])}: {phase['name']}\n\n"
         
         if phase.get('description'):
             md += f"{phase['description'].strip()}\n\n"
@@ -86,7 +136,9 @@ def format_design_results_markdown(results: Dict[str, Any], include_specs: bool 
         md += "### Subtasks\n\n"
         
         for j, task in enumerate(phase.get('subtasks', []), 1):
-            md += f"#### {j}. {task['title']}\n\n"
+            # Clean up any remaining numbering in the title for display
+            clean_title = re.sub(r'^(\d+\.\s+|\d+\.\d+\.\s+|\d+\)\s+|\(\d+\)\s+|Subtask\s+\d+:\s+|Task\s+\d+:\s+)', '', task['title'])
+            md += f"#### {j}/{len(phase.get('subtasks', []))}: {clean_title}\n\n"
             
             if task.get('description'):
                 md += f"{task['description'].strip()}\n\n"

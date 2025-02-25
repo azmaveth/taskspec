@@ -195,8 +195,8 @@ def analyze_task(
     step_starts = {}
     completed_weight = 0.0
     
-    # Track overall progress
-    overall_task_id = progress.add_task("Analyzing task...", total=100)
+    # Track overall progress with finer granularity
+    overall_task_id = progress.add_task("Analyzing task...", total=1000)
     progress.update(overall_task_id, advance=0)
     
     # Template setup
@@ -211,8 +211,19 @@ def analyze_task(
         step_weight = current_step["weight"]
         step_starts["search"] = time.time()
         
-        search_task_id = progress.add_task("Searching for context...", total=100)
+        # Create a progress task for this step with higher granularity
+        search_task_id = progress.add_task("Searching for context (Step 1/5)...", total=100)
         progress.update(overall_task_id, advance=0, description="Searching for context...")
+        
+        # Start the search and update progress incrementally (simulate progress updates)
+        for i in range(10):
+            if i > 0:  # Skip the first iteration to avoid zero timing
+                # Update the search progress
+                progress.update(search_task_id, completed=i*10)
+                # Also update the main progress incrementally
+                increment = (step_weight * 1000) / 10
+                progress.update(overall_task_id, advance=increment/2)
+                time.sleep(0.05)  # Small delay to show progress
         
         search_results = search_web(task, max_results=3)
         search_time = time.time() - step_starts["search"]
@@ -222,7 +233,7 @@ def analyze_task(
         
         # Update overall progress based on completed weight
         completed_weight += step_weight
-        update_progress_with_eta(progress, overall_task_id, timing_data, completed_weight, "Searching")
+        progress.update(overall_task_id, completed=int(completed_weight * 1000))
         
         if search_results:
             additional_context = "ADDITIONAL CONTEXT FROM WEB SEARCH:\n\n"
@@ -234,13 +245,24 @@ def analyze_task(
     step_weight = current_step["weight"]
     step_starts["initial_analysis"] = time.time()
     
-    initial_task_id = progress.add_task("Creating initial analysis...", total=100)
+    initial_task_id = progress.add_task("Creating initial analysis (Step 2/5)...", total=100)
     progress.update(overall_task_id, description="Creating initial analysis...")
+    
+    # Simulate progress updates before the actual API call
+    for i in range(5):
+        progress.update(initial_task_id, completed=i*10)
+        increment = (step_weight * 1000) / 10
+        progress.update(overall_task_id, advance=increment/2)
+        time.sleep(0.05)
     
     breakdown_prompt = TASK_BREAKDOWN_PROMPT.format(
         task=task,
         additional_context=additional_context
     )
+    
+    # Update progress before the potentially long call
+    progress.update(initial_task_id, completed=50)
+    progress.update(overall_task_id, advance=increment)
     
     initial_analysis = complete(
         llm_config=llm_config,
@@ -249,6 +271,12 @@ def analyze_task(
         temperature=0.3,
     )
     
+    # Update progress after the call
+    for i in range(5, 10):
+        progress.update(initial_task_id, completed=i*10)
+        progress.update(overall_task_id, advance=increment/2)
+        time.sleep(0.02)
+    
     initial_time = time.time() - step_starts["initial_analysis"]
     timing_data["initial_analysis"] = initial_time
     
@@ -256,15 +284,21 @@ def analyze_task(
     
     # Update overall progress
     completed_weight += step_weight
-    update_progress_with_eta(progress, overall_task_id, timing_data, completed_weight, "Creating analysis")
+    progress.update(overall_task_id, completed=int(completed_weight * 1000), description="Refining analysis...")
     
     # Step 3: Refinement
     current_step = next(s for s in enabled_steps if s["name"] == "refinement")
     step_weight = current_step["weight"]
     step_starts["refinement"] = time.time()
     
-    refinement_task_id = progress.add_task("Refining analysis...", total=100)
-    progress.update(overall_task_id, description="Refining analysis...")
+    refinement_task_id = progress.add_task("Refining analysis (Step 3/5)...", total=100)
+    
+    # Simulate progress updates before the actual API call
+    for i in range(5):
+        progress.update(refinement_task_id, completed=i*10)
+        increment = (step_weight * 1000) / 10
+        progress.update(overall_task_id, advance=increment/2)
+        time.sleep(0.03)
     
     refinement_prompt = REFINEMENT_PROMPT.format(
         initial_analysis=initial_analysis
@@ -277,11 +311,21 @@ def analyze_task(
         {"role": "user", "content": refinement_prompt}
     ]
     
+    # Update progress before potentially long call
+    progress.update(refinement_task_id, completed=50)
+    progress.update(overall_task_id, advance=increment)
+    
     refined_analysis = chat_with_history(
         llm_config=llm_config,
         messages=messages,
         temperature=0.2,
     )
+    
+    # Update progress after the call
+    for i in range(5, 10):
+        progress.update(refinement_task_id, completed=i*10)
+        progress.update(overall_task_id, advance=increment/2)
+        time.sleep(0.02)
     
     refinement_time = time.time() - step_starts["refinement"]
     timing_data["refinement"] = refinement_time
@@ -290,15 +334,21 @@ def analyze_task(
     
     # Update overall progress
     completed_weight += step_weight
-    update_progress_with_eta(progress, overall_task_id, timing_data, completed_weight, "Refining")
+    progress.update(overall_task_id, completed=int(completed_weight * 1000), description="Formatting specification...")
     
     # Step 4: Format into template
     current_step = next(s for s in enabled_steps if s["name"] == "formatting")
     step_weight = current_step["weight"]
     step_starts["formatting"] = time.time()
     
-    template_task_id = progress.add_task("Formatting specification...", total=100)
-    progress.update(overall_task_id, description="Formatting specification...")
+    template_task_id = progress.add_task("Formatting specification (Step 4/5)...", total=100)
+    
+    # Simulate progress updates before the actual API call
+    for i in range(5):
+        progress.update(template_task_id, completed=i*10)
+        increment = (step_weight * 1000) / 10
+        progress.update(overall_task_id, advance=increment/2)
+        time.sleep(0.03)
     
     format_prompt = TEMPLATE_FORMAT_PROMPT.format(
         template=template_str
@@ -307,11 +357,21 @@ def analyze_task(
     messages.append({"role": "assistant", "content": refined_analysis})
     messages.append({"role": "user", "content": format_prompt})
     
+    # Update progress before potentially long call
+    progress.update(template_task_id, completed=50)
+    progress.update(overall_task_id, advance=increment)
+    
     formatted_spec = chat_with_history(
         llm_config=llm_config,
         messages=messages,
         temperature=0.2,
     )
+    
+    # Update progress after the call
+    for i in range(5, 10):
+        progress.update(template_task_id, completed=i*10)
+        progress.update(overall_task_id, advance=increment/2)
+        time.sleep(0.02)
     
     formatting_time = time.time() - step_starts["formatting"]
     timing_data["formatting"] = formatting_time
@@ -320,7 +380,8 @@ def analyze_task(
     
     # Update overall progress
     completed_weight += step_weight
-    update_progress_with_eta(progress, overall_task_id, timing_data, completed_weight, "Formatting")
+    progress.update(overall_task_id, completed=int(completed_weight * 1000), 
+                   description="Validating specification..." if validate else "Completing analysis...")
     
     # Step 5: Validation
     if validate:
@@ -328,8 +389,10 @@ def analyze_task(
         step_weight = current_step["weight"]
         step_starts["validation"] = time.time()
         
-        validation_task_id = progress.add_task("Validating specification...", total=100)
-        progress.update(overall_task_id, description="Validating specification...")
+        validation_task_id = progress.add_task("Validating specification (Step 5/5)...", total=100)
+        
+        # Simulate incremental progress
+        increment = (step_weight * 1000) / 20  # More granular for validation
         
         formatted_spec = validate_specification(
             formatted_spec, 
@@ -337,7 +400,9 @@ def analyze_task(
             progress, 
             validation_task_id,
             timing_data,
-            step_starts
+            step_starts,
+            overall_task_id,
+            increment
         )
         
         validation_time = time.time() - step_starts["validation"]
@@ -347,7 +412,7 @@ def analyze_task(
         
         # Update overall progress
         completed_weight += step_weight
-        update_progress_with_eta(progress, overall_task_id, timing_data, completed_weight, "Validating")
+        progress.update(overall_task_id, completed=int(completed_weight * 1000), description="Analysis completed!")
     
     # Complete the overall task
     progress.update(overall_task_id, completed=100, description="Analysis completed!")
@@ -368,6 +433,8 @@ def validate_specification(
     task_id: TaskID,
     timing_data: Dict[str, float] = None,
     step_starts: Dict[str, float] = None,
+    overall_task_id: Optional[TaskID] = None,
+    increment: float = 0,
     max_iterations: int = 3
 ) -> str:
     """
@@ -392,9 +459,21 @@ def validate_specification(
         iter_start_time = time.time()
         progress.update(task_id, description=f"Validation iteration {i+1}/{max_iterations}...")
         
+        # Simulate progress for validation prep
+        for j in range(3):
+            progress.update(task_id, advance=5)
+            if overall_task_id and increment:
+                progress.update(overall_task_id, advance=increment/4)
+            time.sleep(0.02)
+        
         validation_prompt = VALIDATION_PROMPT.format(
             spec_document=current_spec
         )
+        
+        # Update progress before LLM call
+        progress.update(task_id, advance=10)
+        if overall_task_id and increment:
+            progress.update(overall_task_id, advance=increment/4)
         
         validation_result = complete(
             llm_config=llm_config,
@@ -403,10 +482,17 @@ def validate_specification(
             temperature=0.2,
         )
         
+        # Update progress after LLM call
+        progress.update(task_id, advance=10)
+        if overall_task_id and increment:
+            progress.update(overall_task_id, advance=increment/4)
+        
         # Check if the validation indicates issues or if it's already valid
         if any(term in validation_result.lower() for term in ["valid", "meets all criteria", "no issues"]):
             # Specification is valid, no changes needed
-            progress.update(task_id, advance=100 / max_iterations)
+            progress.update(task_id, completed=100 / max_iterations * (i+1))
+            if overall_task_id and increment:
+                progress.update(overall_task_id, advance=increment/4)
             if timing_data is not None and step_starts is not None:
                 iterations_timing.append(time.time() - iter_start_time)
             break
@@ -424,6 +510,13 @@ Please improve the specification document to address these issues:
 Provide the complete improved specification document.
 """
         
+        # Simulate progress before LLM call
+        for j in range(2):
+            progress.update(task_id, advance=5)
+            if overall_task_id and increment:
+                progress.update(overall_task_id, advance=increment/8)
+            time.sleep(0.02)
+        
         # Get improved specification
         improved_spec = complete(
             llm_config=llm_config,
@@ -432,11 +525,20 @@ Provide the complete improved specification document.
             temperature=0.2,
         )
         
+        # Update progress after LLM call
+        for j in range(2):
+            progress.update(task_id, advance=5)
+            if overall_task_id and increment:
+                progress.update(overall_task_id, advance=increment/8)
+            time.sleep(0.02)
+        
         # Update the current specification
         current_spec = improved_spec
         
         # Update progress
-        progress.update(task_id, advance=100 / max_iterations)
+        progress.update(task_id, completed=100 / max_iterations * (i+1))
+        if overall_task_id and increment:
+            progress.update(overall_task_id, advance=increment/4)
         
         # Track timing for this iteration
         if timing_data is not None and step_starts is not None:

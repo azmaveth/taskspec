@@ -4,17 +4,19 @@
 # dependencies = [
 #     "typer>=0.9.0",
 #     "rich>=13.6.0",
-#     "litellm>=1.16.0",
+#     "litellm>=1.16.0", 
 #     "python-dotenv>=1.0.0",
 #     "pydantic>=2.5.0",
 #     "requests>=2.31.0",
 #     "pyyaml>=6.0.0",
+#     "statistics>=1.0.3.5",
 # ]
 # ///
 
 import os
 import sys
 import typer
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
@@ -27,7 +29,7 @@ from llm import setup_llm_client
 from analyzer import analyze_task
 from design import analyze_design_document, format_subtask_for_analysis
 from template import render_template
-from utils import sanitize_filename, format_design_results
+from utils import sanitize_filename, format_design_results, generate_task_summary
 from cache import get_cache_manager
 
 # Initialize Typer app
@@ -146,10 +148,13 @@ def analyze(
         # Generate auto filename if none provided
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            # Use first 30 chars of task for filename
-            first_line = task_content.splitlines()[0] if task_content else "task"
-            filename = sanitize_filename(first_line[:30])
+            # Generate a summary of the task for the filename
+            filename = generate_task_summary(task_content, llm_client)
+            filename = sanitize_filename(filename)
             output_file = Path(f"{filename}_{timestamp}.spec.md")
+            
+            if verbose:
+                console.print(f"Generated filename based on task summary: [bold]{filename}[/bold]")
         
         # Progress display setup
         with Progress(
@@ -161,7 +166,8 @@ def analyze(
             TimeRemainingColumn(),  # Use Rich's built-in remaining time column
             console=console,
             transient=not verbose,
-            expand=True
+            expand=True,
+            refresh_per_second=10  # Increase refresh rate for smoother updates
         ) as progress:
             # Analyze task
             if verbose:
@@ -296,10 +302,13 @@ def design(
         # Generate auto filename if none provided
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            # Use first 30 chars of design doc for filename
-            first_line = design_content.splitlines()[0] if design_content else "design"
-            filename = sanitize_filename(first_line[:30])
+            # Generate a summary of the design document for the filename
+            filename = generate_task_summary(design_content, llm_client)
+            filename = sanitize_filename(filename)
             output_file = Path(f"{filename}_{timestamp}_phases.md")
+            
+            if verbose:
+                console.print(f"Generated filename based on design summary: [bold]{filename}[/bold]")
         
         # Progress display setup
         with Progress(
@@ -311,7 +320,8 @@ def design(
             TimeRemainingColumn(),
             console=console,
             transient=not verbose,
-            expand=True
+            expand=True,
+            refresh_per_second=10  # Increase refresh rate for smoother updates
         ) as progress:
             # Analyze design document
             if verbose:
@@ -336,8 +346,10 @@ def design(
                     phase_specs = []
                     
                     for task_idx, task in enumerate(phase['subtasks']):
+                        # Clean up any remaining numbering in the title for display
+                        clean_title = re.sub(r'^(\d+\.\s+|\d+\.\d+\.\s+|\d+\)\s+|\(\d+\)\s+|Subtask\s+\d+:\s+|Task\s+\d+:\s+)', '', task['title'])
                         if verbose:
-                            console.print(f"Analyzing subtask {task_idx+1}/{len(phase['subtasks'])} of phase {phase_idx+1}/{len(result['phases'])}")
+                            console.print(f"Analyzing subtask {task_idx+1}/{len(phase['subtasks'])} of phase {phase_idx+1}/{len(result['phases'])}: {clean_title}")
                         
                         task_content = format_subtask_for_analysis(task)
                         

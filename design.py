@@ -121,7 +121,7 @@ def analyze_design_document(
     subtasks_task_id = progress.add_task("Generating subtasks...", total=len(phases))
     
     for i, phase in enumerate(phases):
-        progress.update(subtasks_task_id, advance=0, description=f"Generating subtasks for phase {i+1}/{len(phases)}...")
+        progress.update(subtasks_task_id, advance=0, description=f"Generating subtasks for phase {i+1}/{len(phases)}: {phase['name']}...")
         
         subtask_prompt = SUBTASK_GENERATION_PROMPT.format(
             phase_name=phase.get('name', ''),
@@ -252,7 +252,9 @@ def extract_subtasks(subtasks_text: str) -> List[Dict[str, str]]:
                 subtasks.append(current_subtask)
             
             # Start a new subtask
-            title = re.sub(r'^(\d+\.\s+|Subtask\s+\d+:\s+)', '', line, flags=re.IGNORECASE)
+            title = re.sub(r'^(\d+\.\s+|Subtask\s+\d+:\s+|Task\s+\d+:\s+)', '', line, flags=re.IGNORECASE)
+            # Clean up any remaining numbering patterns
+            title = re.sub(r'^(\d+\.\d+\.\s+|\d+\)\s+|\(\d+\)\s+)', '', title)
             current_subtask = {
                 'title': title,
                 'description': '',
@@ -311,7 +313,10 @@ def format_subtask_for_analysis(subtask: Dict[str, str]) -> str:
     Returns:
         Formatted subtask text
     """
-    formatted = subtask['title'] + '\n\n'
+    # Clean title of any numbering for better analysis
+    title = re.sub(r'^(\d+\.\s+|\d+\.\d+\.\s+|\d+\)\s+|\(\d+\)\s+|Subtask\s+\d+:\s+|Task\s+\d+:\s+)', '', subtask['title'])
+    
+    formatted = title + '\n\n'
     
     if subtask['description']:
         formatted += subtask['description'] + '\n\n'
