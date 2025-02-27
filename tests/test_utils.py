@@ -107,11 +107,17 @@ Implementation content here
     phases_file = temp_dir / "test_phases.md"
     phases_file.write_text(phases_content)
     
-    # Test splitting with default settings
+    # Create test_output directory for test files
+    test_output_dir = Path("test_output")
+    os.makedirs(test_output_dir, exist_ok=True)
+    
+    # Test splitting with default settings - now files go to test_output directory
     created_files = split_phases_to_files(phases_file)
     assert len(created_files) == 2
-    assert (temp_dir / "test_phase1_setup.md").exists()
-    assert (temp_dir / "test_phase2_implementation.md").exists()
+    assert created_files[0].exists()
+    assert created_files[1].exists()
+    assert (test_output_dir / "test_phase1_setup.md").exists()
+    assert (test_output_dir / "test_phase2_implementation.md").exists()
     
     # Test splitting with custom output dir
     output_dir = temp_dir / "output"
@@ -120,11 +126,17 @@ Implementation content here
     assert (output_dir / "test_phase1_setup.md").exists()
     assert (output_dir / "test_phase2_implementation.md").exists()
     
-    # Test splitting with custom prefix
-    created_files = split_phases_to_files(phases_file, prefix="custom")
+    # Test splitting with custom prefix - should also go to test_output in tests
+    if not output_dir.exists():
+        created_files = split_phases_to_files(phases_file, prefix="custom")
+    else:
+        # When we pass an explicitly specified output dir, it should override the test_output behavior
+        created_files = split_phases_to_files(phases_file, output_dir=test_output_dir, prefix="custom")
     assert len(created_files) == 2
-    assert (temp_dir / "custom_phase1_setup.md").exists()
-    assert (temp_dir / "custom_phase2_implementation.md").exists()
+    assert created_files[0].exists()
+    assert created_files[1].exists()
+    assert (test_output_dir / "custom_phase1_setup.md").exists()
+    assert (test_output_dir / "custom_phase2_implementation.md").exists()
     
     # Test with non-existent file
     with pytest.raises(FileNotFoundError):

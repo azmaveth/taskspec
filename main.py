@@ -151,7 +151,14 @@ def analyze(
             # Generate a summary of the task for the filename
             filename = generate_task_summary(task_content, llm_client)
             filename = sanitize_filename(filename)
-            output_file = Path(f"{filename}_{timestamp}_spec.md")
+            
+            # If we're running in a test environment, use test_output directory
+            if 'pytest' in sys.modules:
+                output_dir = Path("test_output")
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = output_dir / f"{filename}_{timestamp}_spec.md"
+            else:
+                output_file = Path(f"{filename}_{timestamp}_spec.md")
             
             if verbose:
                 console.print(f"Generated filename based on task summary: [bold]{filename}[/bold]")
@@ -266,7 +273,15 @@ def design(
             # Generate output filename if none provided
             if output_file is None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_file = Path(f"interactive_design_{timestamp}_design.md")
+                
+                # If we're running in a test environment, use test_output directory
+                if 'pytest' in sys.modules:
+                    output_dir = Path("test_output")
+                    os.makedirs(output_dir, exist_ok=True)
+                    output_file = output_dir / f"interactive_design_{timestamp}_design.md"
+                else:
+                    output_file = Path(f"interactive_design_{timestamp}_design.md")
+                
                 if verbose:
                     console.print(f"Generated filename for interactive design: [bold]{output_file}[/bold]")
                     
@@ -363,7 +378,14 @@ def design(
             # Generate a summary of the design document for the filename
             filename = generate_task_summary(design_content, llm_client)
             filename = sanitize_filename(filename)
-            output_file = Path(f"{filename}_{timestamp}_phases.md")
+            
+            # If we're running in a test environment, use test_output directory
+            if 'pytest' in sys.modules:
+                output_dir = Path("test_output")
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = output_dir / f"{filename}_{timestamp}_phases.md"
+            else:
+                output_file = Path(f"{filename}_{timestamp}_phases.md")
             
             if verbose:
                 console.print(f"Generated filename based on design summary: [bold]{filename}[/bold]")

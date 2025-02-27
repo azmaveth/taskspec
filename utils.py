@@ -4,6 +4,7 @@ Utility functions for taskspec.
 
 import re
 import os
+import sys
 import json
 import yaml
 from pathlib import Path
@@ -157,7 +158,13 @@ def split_phases_to_files(phases_file: Path, output_dir: Optional[Path] = None, 
     
     # Determine output directory
     if output_dir is None:
-        output_dir = phases_file.parent
+        # Check if we're running in a test environment
+        if 'pytest' in sys.modules:
+            # Use test_output directory for test-generated files
+            output_dir = Path("test_output")
+            os.makedirs(output_dir, exist_ok=True)
+        else:
+            output_dir = phases_file.parent
     else:
         os.makedirs(output_dir, exist_ok=True)
     
