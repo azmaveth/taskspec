@@ -45,8 +45,8 @@ specify a custom output directory with the --output-dir flag.
 ## Test Status (as of latest run)
 - Overall coverage: ~90%
 - Full coverage: cache/memory_cache.py, cache/base.py, config.py, search.py, template.py
-- High coverage: disk_cache.py (93%), analyzer.py (92%), llm.py (89%), design.py (82%), main.py (~85%), utils.py (~92%)
-- Total test count: 139 tests
+- High coverage: disk_cache.py (93%), analyzer.py (92%), llm.py (89%), design.py (82%), main.py (92%), utils.py (~92%)
+- Total test count: 151 tests
 
 ## Code Style Guidelines
 - Use Python 3.12+ features
