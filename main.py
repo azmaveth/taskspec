@@ -151,7 +151,7 @@ def analyze(
             # Generate a summary of the task for the filename
             filename = generate_task_summary(task_content, llm_client)
             filename = sanitize_filename(filename)
-            output_file = Path(f"{filename}_{timestamp}.spec.md")
+            output_file = Path(f"{filename}_{timestamp}_spec.md")
             
             if verbose:
                 console.print(f"Generated filename based on task summary: [bold]{filename}[/bold]")

@@ -21,12 +21,12 @@ TEST_OUTPUT_DIR = "test_output"
 
 # Patterns of generated test files to clean up
 TEST_ARTIFACTS = [
-    "test_task_description_*.spec.md",
-    "build_a_*_*.spec.md",
+    "test_task_description_*_spec.md",
+    "build_a_*_*_spec.md",
     "create_a_*_*_phases.md",
     "design_a_system_*_phases.md",
-    "web_app_*_*.spec.md",
-    "*.spec_*.md",
+    "web_app_*_*_spec.md",
+    "*_spec_*.md",
 ]
 
 

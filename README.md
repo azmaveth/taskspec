@@ -23,7 +23,7 @@ A Python CLI tool that uses LLMs to analyze tasks, break them down into manageab
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/taskspec.git
+git clone https://github.com/azmaveth/taskspec.git
 cd taskspec
 
 # Install with uv (recommended)
@@ -43,7 +43,7 @@ python -m taskspec.main "Build a REST API for a book inventory system"
 python -m taskspec.main --input task_description.txt
 
 # Specify output file
-python -m taskspec.main "Build a REST API for a book inventory system" --output book_api.spec.md
+python -m taskspec.main "Build a REST API for a book inventory system" --output book_api_spec.md
 
 # Use a different LLM provider and model
 python -m taskspec.main "Build a REST API for a book inventory system" --provider openai --model gpt-4o
@@ -82,7 +82,7 @@ python -m taskspec.main split weather_system_20250225_phases.md
 python -m taskspec.main split weather_system_20250225_phases.md --prefix weather_app --output-dir implementation/
 
 # Suppress stdout output (only write to file)
-python -m taskspec.main "Build a REST API for a book inventory system" --output book_api.spec.md --no-stdout
+python -m taskspec.main "Build a REST API for a book inventory system" --output book_api_spec.md --no-stdout
 
 # Enable verbose output
 python -m taskspec.main "Build a REST API for a book inventory system" --verbose
