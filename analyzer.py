@@ -10,9 +10,9 @@ import time
 import re
 import statistics
 
-from llm import complete, chat_with_history
-from template import get_default_template, render_template, validate_template
-from search import search_web
+from taskspec.llm import complete, chat_with_history
+from taskspec.template import get_default_template, render_template, validate_template
+from taskspec.search import search_web
 
 console = Console()
 

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.mutmut]
+paths_to_mutate = "config.py"
+backup = false
+runner = "pytest -xvs"
+tests_dir = "tests/"
+exclude = """
+tests/
+venv/
+__pycache__/
+cache/__pycache__/
+htmlcov/
+setup.py
+run_mutation_tests.py
+"""

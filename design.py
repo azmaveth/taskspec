@@ -9,7 +9,7 @@ from rich.progress import Progress, TaskID
 import time
 import re
 
-from llm import complete, chat_with_history
+from taskspec.llm import complete, chat_with_history
 
 console = Console()
 

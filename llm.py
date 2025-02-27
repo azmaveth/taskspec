@@ -5,7 +5,7 @@ LLM client implementation using litellm.
 import os
 import litellm
 from typing import Dict, Any, Optional, List
-from config import Config
+from taskspec.config import Config
 from rich.console import Console
 
 console = Console()

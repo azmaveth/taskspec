@@ -24,13 +24,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
 
-from config import load_config
-from llm import setup_llm_client
-from analyzer import analyze_task
-from design import analyze_design_document, format_subtask_for_analysis
-from template import render_template
-from utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
-from cache import get_cache_manager
+from taskspec.config import load_config
+from taskspec.llm import setup_llm_client
+from taskspec.analyzer import analyze_task
+from taskspec.design import analyze_design_document, format_subtask_for_analysis
+from taskspec.template import render_template
+from taskspec.utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
+from taskspec.cache import get_cache_manager
 
 # Initialize Typer app
 app = typer.Typer(help="Task analysis and specification generator using LLMs")

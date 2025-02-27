@@ -46,6 +46,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+mutants/
+.mutmut-cache
+mutmut-cache/
 
 # Environments
 .env

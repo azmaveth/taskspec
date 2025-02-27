@@ -37,8 +37,10 @@ class Config(BaseModel):
     cache_ttl: int = 86400  # 24 hours in seconds
     cache_path: Optional[str] = None
     
-    class Config:
-        frozen = True
+    # Use model_config instead of class Config
+    model_config = {
+        "frozen": True
+    }
 
 def load_config(
     provider_override: Optional[str] = None, 
