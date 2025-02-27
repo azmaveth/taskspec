@@ -24,13 +24,43 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
 
-from taskspec.config import load_config
-from taskspec.llm import setup_llm_client
-from taskspec.analyzer import analyze_task
-from taskspec.design import analyze_design_document, format_subtask_for_analysis
-from taskspec.template import render_template
-from taskspec.utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
-from taskspec.cache import get_cache_manager
+# Make direct invocation of main.py work by adding parent directory to path
+# and enabling direct imports
+script_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(script_dir))
+
+# Handle direct imports when running as a script
+try:
+    # Try importing as module first (normal case)
+    from taskspec.config import load_config
+    from taskspec.llm import setup_llm_client
+    from taskspec.analyzer import analyze_task
+    from taskspec.design import analyze_design_document, format_subtask_for_analysis
+    from taskspec.template import render_template
+    from taskspec.utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
+    from taskspec.cache import get_cache_manager
+except ModuleNotFoundError:
+    # If that fails, try direct imports (script invocation case)
+    import config as load_config_module
+    import llm as llm_module
+    import analyzer as analyzer_module
+    import design as design_module
+    import template as template_module
+    import utils as utils_module
+    import cache as cache_module
+    
+    # Assign the imported modules to their expected names
+    load_config = load_config_module.load_config
+    setup_llm_client = llm_module.setup_llm_client
+    analyze_task = analyzer_module.analyze_task
+    analyze_design_document = design_module.analyze_design_document
+    format_subtask_for_analysis = design_module.format_subtask_for_analysis
+    render_template = template_module.render_template
+    sanitize_filename = utils_module.sanitize_filename
+    format_design_results = utils_module.format_design_results
+    generate_task_summary = utils_module.generate_task_summary
+    split_phases_to_files = utils_module.split_phases_to_files
+    get_cache_manager = cache_module.get_cache_manager
 
 # Initialize Typer app
 app = typer.Typer(help="Task analysis and specification generator using LLMs")

@@ -90,11 +90,12 @@ def main():
 # Original repository path (update if taskspec has been moved)
 REPO_DIR="{repo_dir}"
 
-# Current directory for context
+# Current directory when script is invoked
 CURRENT_DIR="$(pwd)"
 
-# Change to repository directory, run the command, then return
-(cd "$REPO_DIR" && python -m taskspec.main "$@")
+# Create a more reliable script that uses a symlink to this location
+cd "$REPO_DIR" || exit 1
+exec python -m taskspec.main "$@"
 """
         # Write the wrapper script
         with open(target_path, "w") as f:
