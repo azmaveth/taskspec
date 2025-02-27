@@ -1,125 +1,172 @@
-# taskspec
+# TaskSpec
 
-A Python CLI tool that uses LLMs to analyze tasks, break them down into manageable subtasks, and generate structured specification documents.
+TaskSpec is a Python CLI tool that uses LLMs to analyze tasks, break them down into manageable subtasks, and generate structured specification documents. It's designed to assist in planning and implementing software projects by providing detailed task analysis.
 
 ## Features
 
 - Analyzes tasks and generates comprehensive specifications
 - Breaks down tasks into actionable subtasks
-- Multi-step analysis process for higher quality results
-- Task validation to ensure specifications are complete and actionable
 - Interactive design mode with guided dialog for system design
 - Automatic analysis of subtasks from design documents
-- Custom template support for tailored output formats
-- Progress monitoring with rich progress bars
+- Supports multiple LLM providers (Ollama, OpenAI, Anthropic, Cohere)
 - Response caching system to improve performance and reduce API costs
-- Supports multiple LLM providers (Ollama, OpenAI, Anthropic, etc.)
-- Input from command line or files
 - Optional web search for additional context
-- Outputs to stdout or file
 - Split phases into individual files for easier management
-- Filename generation based on intelligent task summarization
-- Clean test output organization to avoid cluttering the project directory
-- Configurable via CLI arguments, environment variables, or .env file
 
 ## Installation
+
+### Prerequisites
+
+- Python 3.12 or higher
+- [uv](https://github.com/astral-sh/uv) (recommended) or pip
 
 ### Quick Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/azmaveth/taskspec.git
+git clone https://github.com/yourusername/taskspec.git
 cd taskspec
 
-# Install with uv (recommended)
-uv install
+# Install dependencies using uv (recommended)
+uv pip install -e .
 
-# Or using pip
+# Or using standard pip
 pip install -e .
 
-# Install the 'ts' command in your PATH
-python bin/install_ts
+# Install the 'ts' command to your PATH (recommended)
+python3 bin/install_ts
 ```
 
-### Using the 'ts' Command
+The `install_ts` script will:
+1. Create a wrapper script named `ts` in your user's bin directory
+2. Make the script executable
+3. Add the directory to your PATH if needed (with instructions)
 
-After installation, you can use the `ts` command from anywhere to run TaskSpec:
+After installation, you might need to restart your terminal or run `source ~/.bashrc` (or equivalent) to update your PATH.
+
+## Running TaskSpec
+
+### Method 1: Using the installed `ts` command (recommended)
+
+After running the `install_ts` script, you can use the `ts` command from anywhere:
 
 ```bash
-# Check if ts is properly installed
-which ts
+# Check if installation was successful
 ts --help
+
+# Run a task analysis
+ts analyze "Build a REST API for a book inventory system"
+
+# Design a system interactively
+ts design --interactive
 ```
 
-If the `ts` command isn't available, you may need to restart your terminal or manually add the bin directory to your PATH.
+The `ts` command automatically detects whether to use `uv`, `python3`, or `python` based on what's available in your environment.
 
-## Usage
+### Method 2: Using the repository wrapper script
+
+If you haven't installed the `ts` command to your PATH, you can still use the wrapper script directly:
 
 ```bash
-# Basic usage with the ts command
-ts "Build a REST API for a book inventory system"
+# From the taskspec directory
+./bin/ts analyze "Build a REST API for a book inventory system"
+```
 
-# Input from file
-ts --input task_description.txt
+### Method 3: Direct execution with uv
+
+```bash
+# From the taskspec directory
+uv run main.py analyze "Build a REST API for a book inventory system"
+```
+
+### Method 4: Direct execution with Python
+
+```bash
+# From the taskspec directory
+python3 main.py analyze "Build a REST API for a book inventory system"
+```
+
+## Commands
+
+TaskSpec offers several commands for different use cases:
+
+### analyze
+
+Analyze a task, break it down into subtasks, and generate a specification document.
+
+```bash
+ts analyze "Build a simple note-taking app with Flask"
+
+# Use a file as input
+ts analyze --input task_description.txt
 
 # Specify output file
-ts "Build a REST API for a book inventory system" --output book_api_spec.md
+ts analyze "Build a REST API" --output api_spec.md
 
-# Alternative usage with python module
-python -m taskspec.main "Build a REST API for a book inventory system"
+# Use a specific LLM provider and model
+ts analyze "Build a REST API" --provider openai --model gpt-4o
 
-# Use a different LLM provider and model
-ts "Build a REST API for a book inventory system" --provider openai --model gpt-4o
-
-# Use a custom template
-ts "Build a REST API for a book inventory system" --template my_template.md
-
-# Enable web search for additional context
-ts "Build a REST API for a book inventory system" --search
-
-# Disable validation
-ts "Build a REST API for a book inventory system" --no-validate
-
-# Disable caching
-ts "Build a REST API for a book inventory system" --no-cache
-
-# Use memory cache instead of disk cache
-ts "Build a REST API for a book inventory system" --cache-type memory
-
-# Set custom cache TTL (time-to-live)
-ts "Build a REST API for a book inventory system" --cache-ttl 3600
-
-# Clear cache before running
-ts "Build a REST API for a book inventory system" --clear-cache
-
-# Split design phases into separate files during generation
-ts design "Design a weather monitoring system" --split-phases
-
-# Split design phases with custom output directory 
-ts design "Design a weather monitoring system" --split-phases --output-dir phases/
-
-# Use interactive design mode for guided design document creation
-ts design --interactive
-
-# Analyze subtasks from a design document and generate specifications for each
-ts design "Design a weather monitoring system" --analyze-subtasks
-
-# Split an existing phases file
-ts split weather_system_20250225_phases.md
-
-# Split with custom prefix and output directory
-ts split weather_system_20250225_phases.md --prefix weather_app --output-dir implementation/
-
-# Suppress stdout output (only write to file)
-ts "Build a REST API for a book inventory system" --output book_api_spec.md --no-stdout
+# Add web search for additional context
+ts analyze "Build a REST API" --search
 
 # Enable verbose output
-ts "Build a REST API for a book inventory system" --verbose
+ts analyze "Build a REST API" --verbose
+```
+
+### design
+
+Analyze a design document, break it into implementation phases and subtasks.
+
+```bash
+# Process an existing design document
+ts design --input design_document.md
+
+# Create a design document through interactive dialog
+ts design --interactive
+
+# Split design phases into separate files
+ts design --input design_document.md --split-phases
+
+# Analyze subtasks and generate specifications for each
+ts design --input design_document.md --analyze-subtasks
+
+# Output in JSON format
+ts design --input design_document.md --format json
+```
+
+### split
+
+Split a phases markdown file into separate files.
+
+```bash
+# Split a phases file
+ts split path/to/phases.md
+
+# Specify output directory and prefix
+ts split path/to/phases.md --output-dir phases/ --prefix project
+```
+
+## Cache Management
+
+TaskSpec includes a caching system to improve performance and reduce API costs:
+
+```bash
+# Disable caching
+ts analyze "Build a REST API" --no-cache
+
+# Use memory cache instead of disk cache
+ts analyze "Build a REST API" --cache-type memory
+
+# Set custom cache time-to-live (in seconds)
+ts analyze "Build a REST API" --cache-ttl 3600
+
+# Clear cache before running
+ts analyze "Build a REST API" --clear-cache
 ```
 
 ## Configuration
 
-taskspec can be configured using:
+TaskSpec can be configured using:
 
 1. Command-line arguments (highest priority)
 2. Environment variables
@@ -127,102 +174,41 @@ taskspec can be configured using:
 
 ### Environment Variables
 
-- `LLM_PROVIDER`: LLM provider to use (default: "ollama")
-- `LLM_MODEL`: LLM model to use (default provider-specific)
+- `LLM_PROVIDER`: The LLM provider to use (default: "ollama")
+- `LLM_MODEL`: The LLM model to use (default depends on provider)
+- `CACHE_ENABLED`: Enable response caching (default: true)
+- `CACHE_TYPE`: Cache type (memory or disk, default: disk)
+- `CACHE_PATH`: Path for the disk cache (default: ~/.taskspec/cache.db)
+- `CACHE_TTL`: Time-to-live for cache entries in seconds (default: 86400 - 24 hours)
+
+### API Keys
+
+Configure API keys for various services:
 - `OPENAI_API_KEY`: OpenAI API key
 - `ANTHROPIC_API_KEY`: Anthropic API key
 - `COHERE_API_KEY`: Cohere API key
-- `BRAVE_API_KEY`: Brave Search API key
-- `MAX_SEARCH_RESULTS`: Maximum number of search results to retrieve (default: 5)
-- `MULTI_STEP_ENABLED`: Enable multi-step analysis process (default: true)
-- `VALIDATION_ENABLED`: Enable specification validation (default: true)
-- `MAX_VALIDATION_ITERATIONS`: Maximum validation iterations (default: 3)
-- `CACHE_ENABLED`: Enable response caching (default: true)
-- `CACHE_TYPE`: Cache type to use ("disk" or "memory", default: "disk")
-- `CACHE_TTL`: Cache time-to-live in seconds (default: 86400)
-- `CACHE_PATH`: Custom path for cache storage
+- `BRAVE_API_KEY`: Brave API key (for web search)
 
-## Output Formats
+## Troubleshooting
 
-### Task Specification Format
+### Common Issues
 
-By default, the generated specification follows this template (can be customized):
+1. **Command not found: ts**
+   - Ensure you've run `python3 bin/install_ts`
+   - Check if the installation directory is in your PATH
+   - Try restarting your terminal
 
-```markdown
-# Specification Template
-> Ingest the information from this file, implement the Low-Level Tasks, and generate the code that will satisfy the High and Mid-Level Objectives.
-## High-Level Objective
-- [High level goal goes here - what do you want to build?]
-## Mid-Level Objective
-- [List of mid-level objectives - what are the steps to achieve the high-level objective?]
-- [Each objective should be concrete and measurable]
-- [But not too detailed - save details for implementation notes]
-## Implementation Notes
-- [Important technical details - what are the important technical details?]
-- [Dependencies and requirements - what are the dependencies and requirements?]
-- [Coding standards to follow - what are the coding standards to follow?]
-- [Other technical guidance - what are other technical guidance?]
-## Context
-### Beginning context
-- [List of files that exist at start - what files exist at start?]
-### Ending context  
-- [List of files that will exist at end - what files will exist at end?]
-## Low-Level Tasks
-> Ordered from start to finish
-1. [First task - what is the first task?]
-```aider
-What prompt would you run to complete this task?
-What file do you want to CREATE or UPDATE?
-What function do you want to CREATE or UPDATE?
-What are details you want to add to drive the code changes?
-What command should be run to test that the changes are correct?
-```
+2. **Module not found errors**
+   - Ensure you've installed dependencies with `uv pip install -e .` or `pip install -e .`
+   - Make sure you're running the command from the correct directory
 
-### Design Document Format
+3. **Permission errors**
+   - Ensure the wrapper scripts are executable (`chmod +x bin/ts bin/install_ts`)
 
-When using the `design` command with interactive mode, the system guides you through creating a design document with:
-
-- System requirements elicitation
-- Architectural decisions
-- Implementation phasing
-- Security threat analysis
-- Risk management strategy
-- Detailed subtasks for each phase
-
-The output can be formatted as Markdown, JSON, or YAML, and subtasks can be automatically analyzed to generate individual specifications.
-
-## Testing
-
-TaskSpec includes a comprehensive test suite with both unit tests and mutation tests. To run tests:
-
-```bash
-# Run all unit tests
-pytest
-
-# Run tests with coverage report
-pytest --cov=taskspec --cov-report=html
-
-# Clean up test artifacts and run specific tests
-./run_tests.py --clean --unit --module utils main
-
-# Run mutation tests on specific modules
-./run_tests.py --mutation --module utils --max-mutations 5
-
-# Use a custom output directory for all test files
-./run_tests.py --unit --all --report --output-dir test_results
-
-# See all testing options
-./run_tests.py --help
-```
-
-All test output files and artifacts are automatically stored in the `test_output` directory:
-- Coverage reports and mutation test results
-- All `.md` files generated during tests
-- Phase files created by the split functionality
-- Any auto-generated specification files
-
-This keeps the main project directory clean. You can specify a custom output directory with the `--output-dir` flag when running tests.
+4. **LLM Provider errors**
+   - Check that you've configured the correct environment variables for your chosen provider
+   - If using Ollama, ensure it's running and available
 
 ## License
 
-MIT
+[MIT License](LICENSE.md)

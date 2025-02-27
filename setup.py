@@ -30,8 +30,8 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "taskspec=taskspec.main:app",
-            "ts=taskspec.main:app",
+            "taskspec=main:app",
+            "ts=main:app",
         ],
     },
     scripts=["bin/ts"],

@@ -83,19 +83,54 @@ def main():
     
     # Create the wrapper script
     try:
-        # Create a direct wrapper script
+        # Create a wrapper script with Python command detection
         wrapper_content = f"""#!/bin/bash
 # TaskSpec command-line wrapper script
 
 # Original repository path (update if taskspec has been moved)
 REPO_DIR="{repo_dir}"
 
+# Detect available Python runner
+PYTHON_CMD=""
+
+# Check for uv first (preferred)
+if command -v uv &> /dev/null; then
+    PYTHON_CMD="uv run"
+    echo "Using uv to run taskspec"
+# Then check for python3
+elif command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3 -m"
+    echo "Using python3 to run taskspec"
+# Finally check for python
+elif command -v python &> /dev/null; then
+    # Check if python is actually python3 by checking version
+    PY_VERSION=$(python --version 2>&1)
+    if [[ $PY_VERSION == *"Python 3"* ]]; then
+        PYTHON_CMD="python -m"
+        echo "Using python to run taskspec"
+    else
+        echo "Warning: Found 'python' but it's not Python 3.x"
+        echo "Please install Python 3.x"
+        exit 1
+    fi
+else
+    echo "Error: Could not find 'uv', 'python3', or 'python' in your PATH"
+    echo "Please install Python 3.x"
+    exit 1
+fi
+
 # Current directory when script is invoked
 CURRENT_DIR="$(pwd)"
 
-# Create a more reliable script that uses a symlink to this location
+# Change to the repository directory and execute the main script
 cd "$REPO_DIR" || exit 1
-exec python -m taskspec.main "$@"
+
+# For uv handle differently since it doesn't use -m flag
+if [[ $PYTHON_CMD == "uv run" ]]; then
+    exec $PYTHON_CMD main.py "$@"
+else
+    exec $PYTHON_CMD taskspec.main "$@"
+fi
 """
         # Write the wrapper script
         with open(target_path, "w") as f:
