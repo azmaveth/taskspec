@@ -58,7 +58,7 @@ Concise summary:"""
     
     try:
         # Import the complete function here to avoid circular imports
-        from llm import complete
+        from taskspec.llm import complete
         
         # Call the LLM with a low token count since we just need a short summary
         summary = complete(

@@ -55,6 +55,12 @@ def test_validate_template():
     {beginning_context}
     """
     assert validate_template(invalid_template) is False
+    
+    # Test with an invalid template and attempt to render it
+    with pytest.raises(ValueError) as excinfo:
+        render_template(invalid_template, high_level_objective="Test")
+    
+    assert "missing required placeholders" in str(excinfo.value)
 
 def test_render_template():
     """Test template rendering."""
@@ -197,3 +203,159 @@ def test_load_custom_template():
             Path(temp_path).unlink()
         except:
             pass
+            
+def test_template_with_unexpected_format():
+    """Test validation with unexpected template format."""
+    # Template with unusual or non-standard formatting
+    unusual_template = """
+    # Unusual Template
+    
+    ## High-Level Objective
+    
+    {high_level_objective}
+    
+    ## Mid-Level Objective
+    
+    {mid_level_objectives}
+    
+    ## Implementation Notes
+    
+    {implementation_notes}
+    
+    ## Context Information
+    
+    ### Beginning context
+    
+    {beginning_context}
+    
+    ### Ending context
+    
+    {ending_context}
+    
+    ## Low-Level Tasks
+    
+    {low_level_tasks}
+    """
+    
+    # Should validate since all required placeholders are present
+    assert validate_template(unusual_template) is True
+    
+    # Test rendering with unusual template
+    values = {
+        "high_level_objective": "Test unusual template",
+        "mid_level_objectives": "Verify it works",
+        "implementation_notes": "Format doesn't matter",
+        "beginning_context": "Start state",
+        "ending_context": "End state",
+        "low_level_tasks": "Tasks"
+    }
+    
+    # Should render without error
+    rendered = render_template(unusual_template, **values)
+    
+    # Verify all values are present
+    assert "Test unusual template" in rendered
+    assert "Verify it works" in rendered
+    
+def test_template_with_unknown_placeholders():
+    """Test validation with a template containing unknown placeholders."""
+    # Template with extra placeholders not in defaults
+    template_with_extra = """
+    # Template with Extra
+    
+    ## High-Level Objective
+    {high_level_objective}
+    
+    ## Mid-Level Objective
+    {mid_level_objectives}
+    
+    ## Implementation Notes
+    {implementation_notes}
+    
+    ## Context
+    ### Beginning context
+    {beginning_context}
+    
+    ### Ending context
+    {ending_context}
+    
+    ## Low-Level Tasks
+    {low_level_tasks}
+    
+    ## Extra Section
+    {extra_section}
+    """
+    
+    # Should validate because it contains all required placeholders
+    assert validate_template(template_with_extra) is True
+    
+    # Test rendering with the extra placeholder
+    values = {
+        "high_level_objective": "Test extra placeholders",
+        "mid_level_objectives": "See what happens",
+        "implementation_notes": "When extra placeholders exist",
+        "beginning_context": "Start",
+        "ending_context": "End",
+        "low_level_tasks": "Do things",
+        # Provide the extra placeholder value
+        "extra_section": "This is an extra section"
+    }
+    
+    # Should render without error when we provide the extra value
+    rendered = render_template(template_with_extra, **values)
+    assert "This is an extra section" in rendered
+    
+    # Test with missing extra placeholder
+    values_missing_extra = {
+        "high_level_objective": "Test extra placeholders",
+        "mid_level_objectives": "See what happens",
+        "implementation_notes": "When extra placeholders exist",
+        "beginning_context": "Start",
+        "ending_context": "End",
+        "low_level_tasks": "Do things"
+        # No extra_section provided
+    }
+    
+    # Should raise KeyError when the extra placeholder isn't provided
+    with pytest.raises(KeyError):
+        render_template(template_with_extra, **values_missing_extra)
+
+def test_render_template_with_special_chars():
+    """Test rendering with special characters in values."""
+    template = """
+    # Specification Template
+    ## High-Level Objective
+    {high_level_objective}
+    ## Mid-Level Objective
+    {mid_level_objectives}
+    ## Implementation Notes
+    {implementation_notes}
+    ## Context
+    ### Beginning context
+    {beginning_context}
+    ### Ending context
+    {ending_context}
+    ## Low-Level Tasks
+    {low_level_tasks}
+    """
+    
+    # Values with special format characters and brackets
+    values = {
+        "high_level_objective": "Testing {curly} braces",
+        "mid_level_objectives": "With % percentage %",
+        "implementation_notes": "And $ dollar signs $$",
+        "beginning_context": "Plus # hashes ###",
+        "ending_context": "And {{ double curly braces }}",
+        "low_level_tasks": "And backslashes \\ and \\n newlines"
+    }
+    
+    # Should handle special characters correctly
+    rendered = render_template(template, **values)
+    
+    # Verify special characters are preserved
+    assert "Testing {curly} braces" in rendered
+    assert "With % percentage %" in rendered
+    assert "And $ dollar signs $$" in rendered
+    assert "Plus # hashes ###" in rendered
+    assert "And {{ double curly braces }}" in rendered
+    assert "And backslashes \\ and \\n newlines" in rendered

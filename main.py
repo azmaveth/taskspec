@@ -245,6 +245,9 @@ def design(
     output_dir: Optional[Path] = typer.Option(
         None, "--output-dir", "-d", help="Directory for split phase files (default: same as output file)"
     ),
+    interactive: bool = typer.Option(
+        False, "--interactive", help="Create a design document through guided interactive dialog with the LLM (includes security threat analysis and risk management)"
+    ),
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Enable verbose output"
     ),
@@ -253,14 +256,63 @@ def design(
     Analyze a design document, break it into implementation phases and subtasks.
     
     The design document can be provided directly as an argument or read from a file.
+    Alternatively, use --interactive to create a design document through a guided dialog with the LLM.
+    The interactive mode will guide you through requirements elicitation, security threat analysis,
+    risk management strategy selection, and acceptance criteria definition.
     """
     try:
-        # Get design document content
-        if design_doc is None and input_file is None:
-            console.print("[bold red]Error:[/bold red] Either design document or input file must be provided.")
+        # Check if we're in interactive mode
+        if interactive:
+            # Generate output filename if none provided
+            if output_file is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_file = Path(f"interactive_design_{timestamp}_design.md")
+                if verbose:
+                    console.print(f"Generated filename for interactive design: [bold]{output_file}[/bold]")
+                    
+            # Load configuration and setup LLM client for interactive session
+            config = load_config(
+                provider_override=llm_provider, 
+                model_override=llm_model,
+                cache_enabled_override=cache_enabled,
+                cache_type_override=cache_type,
+                cache_ttl_override=cache_ttl
+            )
+            
+            cache_manager = None
+            if config.cache_enabled:
+                cache_manager = get_cache_manager(
+                    cache_type=config.cache_type,
+                    cache_path=config.cache_path,
+                    ttl=config.cache_ttl
+                )
+                
+                if clear_cache:
+                    if verbose:
+                        console.print("[bold yellow]Clearing cache...[/bold yellow]")
+                    cache_manager.clear()
+            
+            # Setup LLM client
+            llm_client = setup_llm_client(config, cache_manager)
+            
+            # Run interactive design session
+            design_content = design.create_interactive_design(llm_client, console, verbose)
+            
+            # Save the design document 
+            output_file.write_text(design_content)
+            if verbose:
+                console.print(f"\nDesign document saved to: [bold green]{output_file}[/bold green]")
+                
+            # Proceed with analysis if needed
+            if verbose:
+                console.print("\n[bold]Proceeding to analyze the created design document...[/bold]")
+            
+        # Get design document content from file or argument
+        elif design_doc is None and input_file is None:
+            console.print("[bold red]Error:[/bold red] Either design document or input file must be provided, or use --interactive mode.")
             return 1
             
-        if input_file is not None:
+        elif input_file is not None:
             if not input_file.exists():
                 console.print(f"[bold red]Error:[/bold red] Input file not found: {input_file}")
                 return 1

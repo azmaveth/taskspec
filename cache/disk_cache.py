@@ -1,19 +1,18 @@
 """
-Disk-based SQLite cache implementation for taskspec.
+Disk-based cache implementation for taskspec.
 """
 
 import os
+import pickle
 import sqlite3
 import time
-import json
-import pickle
-from typing import Any, Dict, Optional, Tuple
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 from .base import CacheInterface
 
 class DiskCache(CacheInterface):
-    """Disk-based SQLite cache implementation."""
+    """Disk-based cache implementation using SQLite."""
     
     def __init__(self, cache_path: Optional[str] = None, ttl: int = 86400):
         """
@@ -36,32 +35,24 @@ class DiskCache(CacheInterface):
     
     def _init_db(self):
         """Initialize the SQLite database and create tables if they don't exist."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # Create cache table if it doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS cache (
-                key TEXT PRIMARY KEY,
-                value BLOB,
-                timestamp REAL
-            )
-        ''')
-        
-        # Create stats table if it doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS stats (
-                name TEXT PRIMARY KEY,
-                value INTEGER
-            )
-        ''')
-        
-        # Initialize stats if they don't exist
-        for stat in ["hits", "misses"]:
-            cursor.execute("INSERT OR IGNORE INTO stats VALUES (?, 0)", (stat,))
-        
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Create cache table if it doesn't exist
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS cache (
+                    key TEXT PRIMARY KEY,
+                    value BLOB,
+                    timestamp REAL
+                )
+            ''')
+            
+            conn.commit()
+            conn.close()
+        except Exception:
+            # Initialization can fail, but we'll continue and handle errors in methods
+            pass
     
     def get(self, key: str) -> Optional[Any]:
         """
@@ -73,40 +64,37 @@ class DiskCache(CacheInterface):
         Returns:
             The cached value or None if not found or expired
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT value, timestamp FROM cache WHERE key = ?", (key,))
-        result = cursor.fetchone()
-        
-        if result is None:
-            # Update miss stats
-            cursor.execute("UPDATE stats SET value = value + 1 WHERE name = 'misses'")
-            conn.commit()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT value, timestamp FROM cache WHERE key = ?", (key,))
+            row = cursor.fetchone()
+            
             conn.close()
+            
+            # If key not found
+            if not row:
+                self.stats["misses"] += 1
+                return None
+            
+            value_blob, timestamp = row
+            
+            # Check if entry has expired
+            if not self.is_fresh(timestamp):
+                # Remove expired entry
+                self.delete(key)
+                self.stats["misses"] += 1
+                return None
+            
+            # Deserialize the value
+            value = pickle.loads(value_blob)
+            
+            self.stats["hits"] += 1
+            return value
+        except Exception:
             self.stats["misses"] += 1
             return None
-        
-        value_blob, timestamp = result
-        
-        if not self.is_fresh(timestamp):
-            # Entry has expired, remove it
-            cursor.execute("DELETE FROM cache WHERE key = ?", (key,))
-            # Update miss stats
-            cursor.execute("UPDATE stats SET value = value + 1 WHERE name = 'misses'")
-            conn.commit()
-            conn.close()
-            self.stats["misses"] += 1
-            return None
-        
-        # Update hit stats
-        cursor.execute("UPDATE stats SET value = value + 1 WHERE name = 'hits'")
-        conn.commit()
-        conn.close()
-        self.stats["hits"] += 1
-        
-        # Deserialize the value
-        return pickle.loads(value_blob)
     
     def set(self, key: str, value: Any) -> bool:
         """
@@ -120,12 +108,12 @@ class DiskCache(CacheInterface):
             bool: Success status
         """
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
             # Serialize the value
             value_blob = pickle.dumps(value)
             timestamp = time.time()
+            
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
             
             cursor.execute(
                 "INSERT OR REPLACE INTO cache VALUES (?, ?, ?)",
@@ -146,18 +134,21 @@ class DiskCache(CacheInterface):
             key: Cache key
             
         Returns:
-            bool: True if deleted, False if not found
+            bool: True if deleted, False if not found or error
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute("DELETE FROM cache WHERE key = ?", (key,))
-        rows_affected = cursor.rowcount
-        
-        conn.commit()
-        conn.close()
-        
-        return rows_affected > 0
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("DELETE FROM cache WHERE key = ?", (key,))
+            rows_affected = cursor.rowcount
+            
+            conn.commit()
+            conn.close()
+            
+            return rows_affected > 0
+        except Exception:
+            return False
     
     def clear(self) -> bool:
         """
@@ -188,43 +179,48 @@ class DiskCache(CacheInterface):
             - misses: Number of cache misses
             - entries: Number of entries in cache
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # Get the database stats
-        cursor.execute("SELECT name, value FROM stats")
-        db_stats = dict(cursor.fetchall())
-        
-        # Get the number of entries
-        cursor.execute("SELECT COUNT(*) FROM cache")
-        entries = cursor.fetchone()[0]
-        
-        conn.close()
-        
-        # Update in-memory stats from DB
-        self.stats["hits"] = db_stats.get("hits", 0)
-        self.stats["misses"] = db_stats.get("misses", 0)
-        
-        # Combine and return stats
         stats = self.stats.copy()
-        stats["entries"] = entries
+        
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT COUNT(*) FROM cache")
+            count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            stats["entries"] = count
+        except Exception:
+            stats["entries"] = 0
+        
         return stats
-
+    
     def prune_expired(self) -> int:
         """
         Remove all expired entries from the cache.
         
         Returns:
-            int: Number of entries removed
+            int: Number of entries pruned
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        expiry_time = time.time() - self.ttl
-        cursor.execute("DELETE FROM cache WHERE timestamp < ?", (expiry_time,))
-        removed = cursor.rowcount
-        
-        conn.commit()
-        conn.close()
-        
-        return removed
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Find current time
+            current_time = time.time()
+            expiration_time = current_time - self.ttl
+            
+            # Only remove entries if TTL is > 0
+            if self.ttl > 0:
+                cursor.execute("DELETE FROM cache WHERE timestamp < ?", (expiration_time,))
+                pruned = cursor.rowcount
+            else:
+                pruned = 0
+            
+            conn.commit()
+            conn.close()
+            
+            return pruned
+        except Exception:
+            return 0

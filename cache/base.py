@@ -110,4 +110,8 @@ class CacheInterface(abc.ABC):
         Returns:
             bool: True if entry is still fresh
         """
+        # If ttl is 0 or negative, the entry never expires
+        if self.ttl <= 0:
+            return True
+            
         return time.time() - timestamp < self.ttl

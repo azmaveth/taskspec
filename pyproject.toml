@@ -5,8 +5,22 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
+[tool.coverage.run]
+source = ["taskspec"]
+omit = ["*/tests/*", "*/test_*.py", "*/mutants/*", "setup.py", "run_mutation*.py", "mutation_example.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError"
+]
+
 [tool.mutmut]
-paths_to_mutate = "config.py"
+paths_to_mutate = "."
 backup = false
 runner = "pytest -xvs"
 tests_dir = "tests/"

@@ -185,6 +185,21 @@ def test_design_command(
     )
 
 
+def test_design_command_params():
+    """Verify that we can get design command help text."""
+    # Use runner to invoke help for the design command
+    runner = CliRunner()
+    result = runner.invoke(app, ["design", "--help"])
+    
+    # Just verify that the help text is displayed and contains interactive
+    assert result.exit_code == 0
+    assert "interactive" in result.stdout.lower()
+        
+        
+# Interactive mode with custom output is complex to test with mocks
+# This would be better tested with integration tests
+
+
 @patch('taskspec.main.split_phases_to_files')
 def test_split_command(mock_split_phases, runner, tmp_path):
     """Test split command."""
@@ -243,7 +258,7 @@ def test_analyze_command_errors(mock_load_config, runner):
 def test_design_command_errors(mock_load_config, runner):
     """Test design command error handling."""
     
-    # Test missing design_doc and input file
+    # Test missing design_doc and input file (without interactive)
     result = runner.invoke(app, ["design"])
     if result.exit_code == 0:
         assert "Error" in result.stdout
@@ -262,6 +277,10 @@ def test_design_command_errors(mock_load_config, runner):
         assert result.exit_code == 1
         assert "Error" in result.stdout
         assert "not found" in result.stdout.lower()
+        
+        
+# Error handling for interactive mode is also complex to test
+# This would be better tested with integration tests
 
 @patch('taskspec.main.split_phases_to_files')
 def test_split_command_errors(mock_split_phases, runner):

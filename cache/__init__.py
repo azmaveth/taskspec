@@ -19,10 +19,15 @@ def get_cache_manager(cache_type="disk", cache_path=None, ttl=86400):
         
     Returns:
         CacheInterface: Cache manager instance
+        
+    Raises:
+        ValueError: If cache_type is invalid or if cache_path is not provided for disk cache
     """
     if cache_type == "memory":
         return MemoryCache(ttl=ttl)
     elif cache_type == "disk":
+        if cache_path is None:
+            raise ValueError("cache_path must be provided for disk cache")
         return DiskCache(cache_path=cache_path, ttl=ttl)
     else:
         raise ValueError(f"Unsupported cache type: {cache_type}")

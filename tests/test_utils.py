@@ -3,6 +3,8 @@ Tests for the utils module.
 """
 
 import os
+import json
+import yaml
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -11,7 +13,9 @@ from taskspec.utils import (
     sanitize_filename,
     extract_phases_from_markdown,
     split_phases_to_files,
-    format_design_results_markdown
+    format_design_results_markdown,
+    format_design_results,
+    generate_task_summary
 )
 
 def test_sanitize_filename():
@@ -179,3 +183,130 @@ def test_format_design_results_markdown():
     assert "Subtask 1 description" in markdown
     assert "**Technical Details:**" in markdown
     assert "Technical details 1" in markdown
+    
+    # Test with include_specs
+    results["phases"][0]["specifications"] = [
+        {
+            "task": results["phases"][0]["subtasks"][0],
+            "specification": "Spec for subtask 1"
+        }
+    ]
+    
+    markdown = format_design_results_markdown(results, include_specs=True)
+    assert "**Generated Specification:**" in markdown
+    assert "```markdown\nSpec for subtask 1\n```" in markdown
+    
+    # Test handling missing optional fields
+    minimal_results = {
+        "phases": [
+            {
+                "name": "Minimal Phase",
+                "description": "Minimal description",
+                "subtasks": [
+                    {
+                        "title": "Minimal Subtask",
+                        "description": "Minimal subtask description"
+                    }
+                ]
+            }
+        ]
+    }
+    
+    markdown = format_design_results_markdown(minimal_results)
+    assert "## Phase 1/1: Minimal Phase" in markdown
+    assert "Minimal description" in markdown
+    assert "#### 1/1: Minimal Subtask" in markdown
+    assert "Minimal subtask description" in markdown
+    
+    # Test with numbered subtasks in title
+    numbered_results = {
+        "phases": [
+            {
+                "name": "Phase",
+                "description": "Description",
+                "subtasks": [
+                    {
+                        "title": "1. Subtask One",
+                        "description": "Description"
+                    },
+                    {
+                        "title": "Task 2: Subtask Two",
+                        "description": "Description"
+                    }
+                ]
+            }
+        ]
+    }
+    
+    markdown = format_design_results_markdown(numbered_results)
+    assert "#### 1/2: Subtask One" in markdown
+    assert "#### 2/2: Subtask Two" in markdown
+
+def test_format_design_results():
+    """Test format_design_results function for different formats."""
+    # Create a simple results dictionary
+    results = {
+        "phases": [
+            {
+                "name": "Test Phase",
+                "description": "Test description",
+                "subtasks": [
+                    {
+                        "title": "Test Subtask",
+                        "description": "Test subtask description"
+                    }
+                ]
+            }
+        ]
+    }
+    
+    # Test JSON format
+    json_output = format_design_results(results, format_type="json")
+    parsed_json = json.loads(json_output)
+    assert parsed_json == results
+    
+    # Test YAML format
+    yaml_output = format_design_results(results, format_type="yaml")
+    parsed_yaml = yaml.safe_load(yaml_output)
+    assert parsed_yaml == results
+    
+    # Test default markdown format
+    markdown_output = format_design_results(results, format_type="markdown")
+    assert "# Implementation Plan" in markdown_output
+    assert "## Phase 1/1: Test Phase" in markdown_output
+    
+    # Test with unknown format (should default to markdown)
+    unknown_format = format_design_results(results, format_type="unknown_format")
+    assert "# Implementation Plan" in unknown_format
+
+@patch('taskspec.llm.complete')
+def test_generate_task_summary(mock_complete):
+    """Test generate_task_summary function."""
+    # Test with short task
+    short_task = "Short task content"
+    mock_llm_config = {"model": "test-model"}
+    
+    summary = generate_task_summary(short_task, mock_llm_config)
+    assert summary == short_task.strip()
+    
+    # Test with longer task using LLM
+    long_task = "This is a longer task description that should trigger the LLM summarization logic since it's over 40 characters long."
+    mock_complete.return_value = "web app creation"
+    
+    summary = generate_task_summary(long_task, mock_llm_config)
+    assert summary == "web_app_creation"
+    mock_complete.assert_called_once()
+    
+    # Test with LLM returning empty string
+    mock_complete.reset_mock()
+    mock_complete.return_value = ""
+    
+    summary = generate_task_summary(long_task, mock_llm_config)
+    assert summary != ""  # Should use fallback
+    
+    # Test error handling
+    mock_complete.reset_mock()
+    mock_complete.side_effect = Exception("LLM error")
+    
+    summary = generate_task_summary(long_task, mock_llm_config)
+    assert summary == sanitize_filename(long_task[:30])

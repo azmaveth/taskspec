@@ -69,15 +69,21 @@ def complete(
     
     # Check cache if available
     cache_manager = llm_config.get('cache')
+    cache_key = None
+    
     if cache_manager:
-        cache_key = cache_manager.generate_key(
-            prompt=str(messages), 
-            model=model_string, 
-            temperature=temperature
-        )
-        cached_response = cache_manager.get(cache_key)
-        if cached_response:
-            return cached_response
+        try:
+            cache_key = cache_manager.generate_key(
+                prompt=str(messages), 
+                model=model_string, 
+                temperature=temperature
+            )
+            cached_response = cache_manager.get(cache_key)
+            if cached_response:
+                return cached_response
+        except Exception:
+            # If cache access fails, continue without using cache
+            pass
     
     try:
         response = litellm.completion(
@@ -90,8 +96,12 @@ def complete(
         result = response.choices[0].message.content
         
         # Store in cache if available
-        if cache_manager:
-            cache_manager.set(cache_key, result)
+        if cache_manager and cache_key:
+            try:
+                cache_manager.set(cache_key, result)
+            except Exception:
+                # Continue even if cache storing fails
+                pass
         
         return result
     except Exception as e:
@@ -120,15 +130,21 @@ def chat_with_history(
     
     # Check cache if available
     cache_manager = llm_config.get('cache')
+    cache_key = None
+    
     if cache_manager:
-        cache_key = cache_manager.generate_key(
-            prompt=str(messages), 
-            model=model_string, 
-            temperature=temperature
-        )
-        cached_response = cache_manager.get(cache_key)
-        if cached_response:
-            return cached_response
+        try:
+            cache_key = cache_manager.generate_key(
+                prompt=str(messages), 
+                model=model_string, 
+                temperature=temperature
+            )
+            cached_response = cache_manager.get(cache_key)
+            if cached_response:
+                return cached_response
+        except Exception:
+            # If cache access fails, continue without using cache
+            pass
     
     try:
         response = litellm.completion(
@@ -141,8 +157,12 @@ def chat_with_history(
         result = response.choices[0].message.content
         
         # Store in cache if available
-        if cache_manager:
-            cache_manager.set(cache_key, result)
+        if cache_manager and cache_key:
+            try:
+                cache_manager.set(cache_key, result)
+            except Exception:
+                # Continue even if cache storing fails
+                pass
         
         return result
     except Exception as e:

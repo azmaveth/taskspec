@@ -45,9 +45,18 @@ def parse_args():
 def get_modules():
     """Get list of Python modules in the project."""
     modules = []
+    # Check root directory
     for file in os.listdir('.'):
         if file.endswith('.py') and not file.startswith('test_') and file != 'setup.py' and file != 'run_mutation_tests.py':
             modules.append(file[:-3])  # Remove '.py' extension
+    
+    # Also check subdirectories for additional modules
+    for subdir in ['cache']:
+        if os.path.isdir(subdir):
+            for file in os.listdir(subdir):
+                if file.endswith('.py') and not file.startswith('test_') and file != '__init__.py':
+                    modules.append(f"{subdir}/{file[:-3]}")
+    
     return sorted(modules)
 
 
@@ -77,15 +86,24 @@ def update_setup_cfg_for_module(module):
     with open('pyproject.toml', 'r') as f:
         lines = f.readlines()
     
+    # Handle subdirectory modules properly
+    module_path = module
+    if '/' in module:
+        module_path = module.replace('/', '/')
+    
     for i, line in enumerate(lines):
         if line.strip().startswith('paths_to_mutate ='):
-            lines[i] = f'paths_to_mutate = "{module}.py"\n'
+            if '/' in module:
+                lines[i] = f'paths_to_mutate = "{module_path}.py"\n'
+            else:
+                lines[i] = f'paths_to_mutate = "{module}.py"\n'
             break
     
     with open('pyproject.toml', 'w') as f:
         f.writelines(lines)
     
-    print(f"Updated pyproject.toml to target {module}.py")
+    module_file = f"{module}.py" if '/' not in module else module_path + '.py'
+    print(f"Updated pyproject.toml to target {module_file}")
 
 
 def generate_report():
