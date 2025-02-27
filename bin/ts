@@ -1,0 +1,12 @@
+#!/bin/bash
+# TaskSpec command-line utility wrapper script
+
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+REPO_DIR="$( dirname "$SCRIPT_DIR" )"
+
+# Change to repository directory
+cd "$REPO_DIR" || exit 1
+
+# Run the python module with all arguments
+python -m taskspec.main "$@"

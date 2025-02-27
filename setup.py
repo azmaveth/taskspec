@@ -31,8 +31,10 @@ setup(
     entry_points={
         "console_scripts": [
             "taskspec=taskspec.main:app",
+            "ts=taskspec.main:app",
         ],
     },
+    scripts=["bin/ts"],
     python_requires=">=3.12",
     classifiers=[
         "Development Status :: 3 - Alpha",

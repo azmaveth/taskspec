@@ -24,6 +24,8 @@ A Python CLI tool that uses LLMs to analyze tasks, break them down into manageab
 
 ## Installation
 
+### Quick Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/azmaveth/taskspec.git
@@ -34,67 +36,85 @@ uv install
 
 # Or using pip
 pip install -e .
+
+# Install the 'ts' command in your PATH
+python bin/install_ts
 ```
+
+### Using the 'ts' Command
+
+After installation, you can use the `ts` command from anywhere to run TaskSpec:
+
+```bash
+# Check if ts is properly installed
+which ts
+ts --help
+```
+
+If the `ts` command isn't available, you may need to restart your terminal or manually add the bin directory to your PATH.
 
 ## Usage
 
 ```bash
-# Basic usage
-python -m taskspec.main "Build a REST API for a book inventory system"
+# Basic usage with the ts command
+ts "Build a REST API for a book inventory system"
 
 # Input from file
-python -m taskspec.main --input task_description.txt
+ts --input task_description.txt
 
 # Specify output file
-python -m taskspec.main "Build a REST API for a book inventory system" --output book_api_spec.md
+ts "Build a REST API for a book inventory system" --output book_api_spec.md
+
+# Alternative usage with python module
+python -m taskspec.main "Build a REST API for a book inventory system"
 
 # Use a different LLM provider and model
-python -m taskspec.main "Build a REST API for a book inventory system" --provider openai --model gpt-4o
+ts "Build a REST API for a book inventory system" --provider openai --model gpt-4o
 
 # Use a custom template
-python -m taskspec.main "Build a REST API for a book inventory system" --template my_template.md
+ts "Build a REST API for a book inventory system" --template my_template.md
 
 # Enable web search for additional context
-python -m taskspec.main "Build a REST API for a book inventory system" --search
+ts "Build a REST API for a book inventory system" --search
 
 # Disable validation
-python -m taskspec.main "Build a REST API for a book inventory system" --no-validate
+ts "Build a REST API for a book inventory system" --no-validate
 
 # Disable caching
-python -m taskspec.main "Build a REST API for a book inventory system" --no-cache
+ts "Build a REST API for a book inventory system" --no-cache
 
 # Use memory cache instead of disk cache
-python -m taskspec.main "Build a REST API for a book inventory system" --cache-type memory
+ts "Build a REST API for a book inventory system" --cache-type memory
 
 # Set custom cache TTL (time-to-live)
-python -m taskspec.main "Build a REST API for a book inventory system" --cache-ttl 3600
+ts "Build a REST API for a book inventory system" --cache-ttl 3600
 
 # Clear cache before running
-python -m taskspec.main "Build a REST API for a book inventory system" --clear-cache
+ts "Build a REST API for a book inventory system" --clear-cache
 
 # Split design phases into separate files during generation
-python -m taskspec.main design "Design a weather monitoring system" --split-phases
+ts design "Design a weather monitoring system" --split-phases
 
 # Split design phases with custom output directory 
-python -m taskspec.main design "Design a weather monitoring system" --split-phases --output-dir phases/
+ts design "Design a weather monitoring system" --split-phases --output-dir phases/
 
 # Use interactive design mode for guided design document creation
-python -m taskspec.main design --interactive
+ts design --interactive
 
 # Analyze subtasks from a design document and generate specifications for each
-python -m taskspec.main design "Design a weather monitoring system" --analyze-subtasks
+ts design "Design a weather monitoring system" --analyze-subtasks
 
 # Split an existing phases file
-python -m taskspec.main split weather_system_20250225_phases.md
+ts split weather_system_20250225_phases.md
 
 # Split with custom prefix and output directory
-python -m taskspec.main split weather_system_20250225_phases.md --prefix weather_app --output-dir implementation/
+ts split weather_system_20250225_phases.md --prefix weather_app --output-dir implementation/
 
 # Suppress stdout output (only write to file)
-python -m taskspec.main "Build a REST API for a book inventory system" --output book_api_spec.md --no-stdout
+ts "Build a REST API for a book inventory system" --output book_api_spec.md --no-stdout
 
 # Enable verbose output
-python -m taskspec.main "Build a REST API for a book inventory system" --verbose
+ts "Build a REST API for a book inventory system" --verbose
 ```
 
 ## Configuration

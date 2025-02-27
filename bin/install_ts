@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+Installation script for ts command.
+This script creates a custom ts command wrapper in the user's local bin directory.
+"""
+
+import os
+import sys
+import shutil
+import platform
+import subprocess
+from pathlib import Path
+
+def main():
+    # Get the repository directory
+    script_dir = Path(__file__).resolve().parent
+    repo_dir = script_dir.parent
+    
+    # Determine the target directory for the wrapper script
+    home_dir = Path.home()
+    
+    # Common local bin directories to check
+    local_bin_dirs = [
+        home_dir / ".local" / "bin",
+        home_dir / "bin",
+    ]
+    
+    # For macOS, add additional common directories
+    if platform.system() == "Darwin":
+        local_bin_dirs.append(home_dir / "Library" / "bin")
+    
+    # Find or create a bin directory in PATH within the user's home
+    target_dir = None
+    
+    # First check if any existing directories are in PATH
+    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+    
+    for bin_dir in local_bin_dirs:
+        if bin_dir.exists() and str(bin_dir) in path_dirs:
+            target_dir = bin_dir
+            break
+    
+    # If no suitable directory was found in PATH, create one
+    if target_dir is None:
+        # Use the first option by default
+        target_dir = local_bin_dirs[0]
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # Add directory to PATH in shell config
+        print(f"Adding {target_dir} to your PATH...")
+        
+        shell_config = None
+        if platform.system() == "Darwin" or platform.system() == "Linux":
+            # Check which shell is being used
+            shell = os.environ.get("SHELL", "")
+            if "bash" in shell:
+                shell_config = home_dir / ".bashrc"
+            elif "zsh" in shell:
+                shell_config = home_dir / ".zshrc"
+            
+            if shell_config and shell_config.exists():
+                with open(shell_config, "a") as f:
+                    f.write(f"\n# Added by TaskSpec installer\nexport PATH=\"$PATH:{target_dir}\"\n")
+                print(f"Added {target_dir} to {shell_config}")
+                print(f"Please restart your terminal or run 'source {shell_config}' to update your PATH")
+            else:
+                print(f"Could not determine shell config file. Please add {target_dir} to your PATH manually.")
+    
+    # Path to the wrapper script
+    target_path = target_dir / "ts"
+    
+    # Remove existing target if it exists
+    if target_path.exists():
+        try:
+            if target_path.is_symlink() or target_path.is_file():
+                os.remove(target_path)
+            else:
+                print(f"Error: {target_path} exists and is not a file or symlink")
+                return 1
+        except Exception as e:
+            print(f"Error removing existing file: {e}")
+            return 1
+    
+    # Create the wrapper script
+    try:
+        # Create a direct wrapper script
+        wrapper_content = f"""#!/bin/bash
+# TaskSpec command-line wrapper script
+
+# Original repository path (update if taskspec has been moved)
+REPO_DIR="{repo_dir}"
+
+# Current directory for context
+CURRENT_DIR="$(pwd)"
+
+# Change to repository directory, run the command, then return
+(cd "$REPO_DIR" && python -m taskspec.main "$@")
+"""
+        # Write the wrapper script
+        with open(target_path, "w") as f:
+            f.write(wrapper_content)
+        
+        # Make the script executable
+        os.chmod(target_path, 0o755)
+        
+        print(f"Successfully installed 'ts' command in {target_dir}")
+        print("You can now use 'ts' to run TaskSpec commands")
+        
+        if target_dir not in path_dirs:
+            print("\nIMPORTANT: You need to add this directory to your PATH to use the command:")
+            print(f"  export PATH=\"$PATH:{target_dir}\"")
+            print("Add this line to your shell configuration file (~/.bashrc, ~/.zshrc, etc.)")
+        
+        return 0
+    
+    except Exception as e:
+        print(f"Error installing ts command: {e}")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
