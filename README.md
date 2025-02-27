@@ -8,6 +8,8 @@ A Python CLI tool that uses LLMs to analyze tasks, break them down into manageab
 - Breaks down tasks into actionable subtasks
 - Multi-step analysis process for higher quality results
 - Task validation to ensure specifications are complete and actionable
+- Interactive design mode with guided dialog for system design
+- Automatic analysis of subtasks from design documents
 - Custom template support for tailored output formats
 - Progress monitoring with rich progress bars
 - Response caching system to improve performance and reduce API costs
@@ -17,6 +19,7 @@ A Python CLI tool that uses LLMs to analyze tasks, break them down into manageab
 - Outputs to stdout or file
 - Split phases into individual files for easier management
 - Filename generation based on intelligent task summarization
+- Clean test output organization to avoid cluttering the project directory
 - Configurable via CLI arguments, environment variables, or .env file
 
 ## Installation
@@ -75,6 +78,12 @@ python -m taskspec.main design "Design a weather monitoring system" --split-phas
 # Split design phases with custom output directory 
 python -m taskspec.main design "Design a weather monitoring system" --split-phases --output-dir phases/
 
+# Use interactive design mode for guided design document creation
+python -m taskspec.main design --interactive
+
+# Analyze subtasks from a design document and generate specifications for each
+python -m taskspec.main design "Design a weather monitoring system" --analyze-subtasks
+
 # Split an existing phases file
 python -m taskspec.main split weather_system_20250225_phases.md
 
@@ -113,7 +122,9 @@ taskspec can be configured using:
 - `CACHE_TTL`: Cache time-to-live in seconds (default: 86400)
 - `CACHE_PATH`: Custom path for cache storage
 
-## Output Format
+## Output Formats
+
+### Task Specification Format
 
 By default, the generated specification follows this template (can be customized):
 
@@ -146,7 +157,19 @@ What function do you want to CREATE or UPDATE?
 What are details you want to add to drive the code changes?
 What command should be run to test that the changes are correct?
 ```
-```
+
+### Design Document Format
+
+When using the `design` command with interactive mode, the system guides you through creating a design document with:
+
+- System requirements elicitation
+- Architectural decisions
+- Implementation phasing
+- Security threat analysis
+- Risk management strategy
+- Detailed subtasks for each phase
+
+The output can be formatted as Markdown, JSON, or YAML, and subtasks can be automatically analyzed to generate individual specifications.
 
 ## Testing
 
