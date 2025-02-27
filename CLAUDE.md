@@ -15,6 +15,20 @@
 - Generate coverage report: `pytest --cov=taskspec --cov-report=html`
 - Run verbose tests: `pytest -v` 
 
+### Comprehensive Test Script
+Use the comprehensive test script for running tests and cleaning up artifacts:
+- Run unit tests for specific modules: `./run_tests.py --unit --module main utils`
+- Run unit tests with coverage report: `./run_tests.py --unit --all --report`
+- Run mutation tests: `./run_tests.py --mutation --module utils --max-mutations 5` 
+- Clean up test artifacts: `./run_tests.py --clean`
+- Preview cleanup without deleting: `./run_tests.py --clean --dry-run`
+- Full test suite with cleanup: `./run_tests.py --unit --all --report --clean`
+- Use custom output directory: `./run_tests.py --unit --all --output-dir test_results`
+
+All test output files (coverage reports, mutation reports, etc.) will be organized 
+in the "test_output" directory by default to keep the filesystem clean. You can 
+specify a custom output directory with the --output-dir flag.
+
 ## Mutation Testing Commands
 - Run mutation tests: `mutmut run`
 - Show mutation test results: `mutmut results`
@@ -29,12 +43,10 @@
 - Generate HTML report: `./run_mutation_tests.py <module_name> --report`
 
 ## Test Status (as of latest run)
-- Overall coverage: 88%
-- Full coverage: cache/memory_cache.py, config.py, search.py
-- High coverage: template.py (95%), disk_cache.py (93%), analyzer.py (91%), 
-  design.py (81%), llm.py (85%)
-- Moderate coverage: main.py (56%)
-- Total test count: 53 tests
+- Overall coverage: ~90%
+- Full coverage: cache/memory_cache.py, cache/base.py, config.py, search.py, template.py
+- High coverage: disk_cache.py (93%), analyzer.py (92%), llm.py (89%), design.py (82%), main.py (~85%), utils.py (~92%)
+- Total test count: 139 tests
 
 ## Code Style Guidelines
 - Use Python 3.12+ features
@@ -51,6 +63,10 @@
 - Review example mutations in: `docs/mutation_testing_guide.md`
 - Examine our mutation examples in: `mutation_examples.md`
 - See real-world examples in: `mutation_example.py` and `tests/test_mutation_example.py`
+- Run targeted tests on main.py and utils.py: `./run_mutation_main_utils.py`
+  - Test specific module: `./run_mutation_main_utils.py --module main`
+  - Test both modules: `./run_mutation_main_utils.py --module both`
+  - Generate HTML report: `./run_mutation_main_utils.py --report`
 
 ## Architecture Guidelines
 - Modular design with clear separation of concerns

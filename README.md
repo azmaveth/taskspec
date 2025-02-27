@@ -148,6 +148,34 @@ What command should be run to test that the changes are correct?
 ```
 ```
 
+## Testing
+
+TaskSpec includes a comprehensive test suite with both unit tests and mutation tests. To run tests:
+
+```bash
+# Run all unit tests
+pytest
+
+# Run tests with coverage report
+pytest --cov=taskspec --cov-report=html
+
+# Clean up test artifacts and run specific tests
+./run_tests.py --clean --unit --module utils main
+
+# Run mutation tests on specific modules
+./run_tests.py --mutation --module utils --max-mutations 5
+
+# Use a custom output directory for all test files
+./run_tests.py --unit --all --report --output-dir test_results
+
+# See all testing options
+./run_tests.py --help
+```
+
+All test output files (coverage reports, mutation test results, etc.) are organized 
+in the `test_output` directory by default to keep the filesystem clean. You can 
+specify a custom output directory with the `--output-dir` flag.
+
 ## License
 
 MIT
