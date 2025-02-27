@@ -172,9 +172,13 @@ pytest --cov=taskspec --cov-report=html
 ./run_tests.py --help
 ```
 
-All test output files (coverage reports, mutation test results, etc.) are organized 
-in the `test_output` directory by default to keep the filesystem clean. You can 
-specify a custom output directory with the `--output-dir` flag.
+All test output files and artifacts are automatically stored in the `test_output` directory:
+- Coverage reports and mutation test results
+- All `.md` files generated during tests
+- Phase files created by the split functionality
+- Any auto-generated specification files
+
+This keeps the main project directory clean. You can specify a custom output directory with the `--output-dir` flag when running tests.
 
 ## License
 
