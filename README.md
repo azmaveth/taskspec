@@ -172,10 +172,25 @@ TaskSpec can be configured using:
 2. Environment variables
 3. `.env` file in the current directory
 
+### Using a .env File
+
+The easiest way to configure TaskSpec is to copy the provided `.env.example` file to `.env` and modify it as needed:
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit the .env file with your preferred editor
+vim .env  # or nano .env, code .env, etc.
+```
+
+The `.env.example` file contains all available configuration options with their default values and helpful comments.
+
 ### Environment Variables
 
 - `LLM_PROVIDER`: The LLM provider to use (default: "ollama")
 - `LLM_MODEL`: The LLM model to use (default depends on provider)
+- `OUTPUT_DIRECTORY`: Directory where output files will be saved (default: "output")
 - `CACHE_ENABLED`: Enable response caching (default: true)
 - `CACHE_TYPE`: Cache type (memory or disk, default: disk)
 - `CACHE_PATH`: Path for the disk cache (default: ~/.taskspec/cache.db)
