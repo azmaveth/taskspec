@@ -3,6 +3,7 @@ Design document analysis, creation, and phase extraction.
 """
 
 from typing import Dict, Any, List, Optional, Tuple
+from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -22,6 +23,19 @@ Your task is to analyze a software design document and break it down into logica
 where each phase can be further broken down into specific, actionable tasks.
 
 Focus on producing a structured, practical implementation plan that follows software engineering best practices.
+"""
+
+# System prompt with conventions added
+DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS = """You are an expert software architect, project planner, and technical lead. 
+Your task is to analyze a software design document and break it down into logical implementation phases, 
+where each phase can be further broken down into specific, actionable tasks.
+
+Focus on producing a structured, practical implementation plan that follows software engineering best practices
+and the provided conventions and preferences:
+
+{conventions}
+
+Ensure that your implementation phases and subtasks align with these conventions and preferences.
 """
 
 # Prompt for extracting phases from design document
@@ -68,7 +82,8 @@ def analyze_design_document(
     design_doc: str,
     llm_config: Dict[str, Any],
     progress: Optional[Progress] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    conventions_file: Optional[Path] = None
 ) -> Dict[str, Any]:
     """
     Analyze a design document and extract implementation phases.
@@ -78,6 +93,7 @@ def analyze_design_document(
         llm_config: LLM configuration
         progress: Optional progress bar
         verbose: Enable verbose output
+        conventions_file: Optional path to a file containing coding standards and design preferences
         
     Returns:
         Dict containing phases and subtasks
@@ -102,10 +118,18 @@ def analyze_design_document(
         design_doc=design_doc
     )
     
+    # Read conventions file if provided
+    system_prompt = DESIGN_SYSTEM_PROMPT
+    if conventions_file and conventions_file.exists():
+        if verbose:
+            console.print(f"Reading conventions from: [bold]{conventions_file}[/bold]")
+        conventions_content = conventions_file.read_text()
+        system_prompt = DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS.format(conventions=conventions_content)
+    
     phases_analysis = complete(
         llm_config=llm_config,
         prompt=extraction_prompt,
-        system_prompt=DESIGN_SYSTEM_PROMPT,
+        system_prompt=system_prompt,
         temperature=0.3,
     )
     
@@ -137,7 +161,7 @@ def analyze_design_document(
         subtasks_analysis = complete(
             llm_config=llm_config,
             prompt=subtask_prompt,
-            system_prompt=DESIGN_SYSTEM_PROMPT,
+            system_prompt=system_prompt,  # Use the same system prompt with conventions
             temperature=0.3,
         )
         
@@ -322,6 +346,25 @@ Throughout this conversation:
 Your goal is to produce a thorough, well-structured design document that can be used as input for further analysis and planning.
 """
 
+# System prompt for interactive design with conventions
+INTERACTIVE_DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS = """You are an expert software architect, project planner, and security consultant. 
+Your role is to help users create comprehensive design documents for software projects through interactive dialog.
+You'll guide the conversation to elicit complete project requirements, consider security threats, and establish 
+clear acceptance criteria, while adhering to the following conventions and design preferences:
+
+{conventions}
+
+Throughout this conversation:
+1. Ask thoughtful questions to clarify requirements and design considerations
+2. Help identify security threats and discuss risk management approaches
+3. Suggest architecture patterns and best practices when appropriate, aligned with the provided conventions
+4. Help establish clear acceptance criteria for the project
+5. If the user doesn't have a preference on something, suggest what aligns with the conventions or best practice and note your reasoning
+
+Your goal is to produce a thorough, well-structured design document that can be used as input for further analysis and planning,
+and that follows the specified conventions and design preferences.
+"""
+
 # Initial prompt to start the interactive design process
 INTERACTIVE_DESIGN_INITIAL_PROMPT = """I'll help you create a comprehensive design document for your project through an interactive dialogue. Let's start with the basics and then explore the details.
 
@@ -375,7 +418,8 @@ Is there anything specific you'd like me to emphasize or any additional sections
 def create_interactive_design(
     llm_config: Dict[str, Any],
     console: Optional[Console] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    conventions_file: Optional[Path] = None
 ) -> str:
     """
     Create a design document through interactive dialog with the LLM.
@@ -384,6 +428,7 @@ def create_interactive_design(
         llm_config: LLM configuration
         console: Optional console for output
         verbose: Enable verbose output
+        conventions_file: Optional path to a file containing coding standards and design preferences
         
     Returns:
         str: The generated design document
@@ -392,8 +437,17 @@ def create_interactive_design(
         console = Console()
     
     # Initialize conversation history
+    system_prompt = INTERACTIVE_DESIGN_SYSTEM_PROMPT
+    
+    # Read conventions file if provided
+    if conventions_file and conventions_file.exists():
+        if verbose:
+            console.print(f"Reading conventions from: [bold]{conventions_file}[/bold]")
+        conventions_content = conventions_file.read_text()
+        system_prompt = INTERACTIVE_DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS.format(conventions=conventions_content)
+    
     messages = [
-        {"role": "system", "content": INTERACTIVE_DESIGN_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": INTERACTIVE_DESIGN_INITIAL_PROMPT}
     ]
     

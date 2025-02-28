@@ -228,6 +228,9 @@ def design(
     output_format: str = typer.Option(
         "markdown", "--format", "-f", help="Output format (markdown, json, yaml)"
     ),
+    conventions_file: Optional[Path] = typer.Option(
+        None, "--conventions", "-c", help="Conventions file containing coding standards and design preferences"
+    ),
     llm_provider: Optional[str] = typer.Option(
         None, "--provider", "-p", help="LLM provider to use (default: from config)"
     ),
@@ -272,6 +275,9 @@ def design(
     Alternatively, use --interactive to create a design document through a guided dialog with the LLM.
     The interactive mode will guide you through requirements elicitation, security threat analysis,
     risk management strategy selection, and acceptance criteria definition.
+    
+    Use the --conventions option to provide a file with coding standards and design preferences
+    that will be used as context for the design process.
     """
     try:
         # Check if we're in interactive mode
@@ -297,8 +303,16 @@ def design(
                 model_override=llm_model,
                 cache_enabled_override=cache_enabled,
                 cache_type_override=cache_type,
-                cache_ttl_override=cache_ttl
+                cache_ttl_override=cache_ttl,
+                conventions_file_override=conventions_file
             )
+            
+            if verbose:
+                console.print(f"Using LLM provider: [bold]{config.llm_provider}[/bold] with model: [bold]{config.llm_model}[/bold]")
+                if config.cache_enabled:
+                    console.print(f"Caching enabled: [bold]{config.cache_type}[/bold] with TTL: [bold]{config.cache_ttl}s[/bold]")
+                if config.conventions_file:
+                    console.print(f"Using conventions file: [bold]{config.conventions_file}[/bold]")
             
             cache_manager = None
             if config.cache_enabled:
@@ -317,7 +331,7 @@ def design(
             llm_client = setup_llm_client(config, cache_manager)
             
             # Run interactive design session
-            design_content = create_interactive_design(llm_client, console, verbose)
+            design_content = create_interactive_design(llm_client, console, verbose, config.conventions_file)
             
             # Save the design document 
             output_file.write_text(design_content)
@@ -349,13 +363,16 @@ def design(
             model_override=llm_model,
             cache_enabled_override=cache_enabled,
             cache_type_override=cache_type,
-            cache_ttl_override=cache_ttl
+            cache_ttl_override=cache_ttl,
+            conventions_file_override=conventions_file
         )
         
         if verbose:
             console.print(f"Using LLM provider: [bold]{config.llm_provider}[/bold] with model: [bold]{config.llm_model}[/bold]")
             if config.cache_enabled:
                 console.print(f"Caching enabled: [bold]{config.cache_type}[/bold] with TTL: [bold]{config.cache_ttl}s[/bold]")
+            if config.conventions_file:
+                console.print(f"Using conventions file: [bold]{config.conventions_file}[/bold]")
         
         # Setup cache if enabled
         cache_manager = None
@@ -418,7 +435,8 @@ def design(
                 design_content, 
                 llm_client, 
                 progress=progress,
-                verbose=verbose
+                verbose=verbose,
+                conventions_file=config.conventions_file
             )
             
             # Process subtasks if requested

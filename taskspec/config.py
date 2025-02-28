@@ -27,6 +27,7 @@ class Config(BaseModel):
     # Other settings
     max_search_results: int = 5
     template_path: Optional[Path] = None
+    conventions_file: Optional[Path] = None
     multi_step_enabled: bool = True
     validation_enabled: bool = True
     max_validation_iterations: int = 3
@@ -47,7 +48,8 @@ def load_config(
     model_override: Optional[str] = None,
     cache_enabled_override: Optional[bool] = None,
     cache_type_override: Optional[str] = None,
-    cache_ttl_override: Optional[int] = None
+    cache_ttl_override: Optional[int] = None,
+    conventions_file_override: Optional[Path] = None
 ) -> Config:
     """
     Load configuration from environment variables and optional overrides.
@@ -58,6 +60,7 @@ def load_config(
         cache_enabled_override: Override for cache enabled setting
         cache_type_override: Override for cache type
         cache_ttl_override: Override for cache TTL
+        conventions_file_override: Override for conventions file path
         
     Returns:
         Config: Configuration object
@@ -95,6 +98,11 @@ def load_config(
     cache_ttl = cache_ttl_override or int(os.getenv("CACHE_TTL", "86400"))
     cache_path = os.getenv("CACHE_PATH")
     
+    # Get conventions file path from override or environment
+    conventions_file = conventions_file_override or os.getenv("CONVENTIONS_FILE")
+    if conventions_file and not isinstance(conventions_file, Path):
+        conventions_file = Path(conventions_file)
+        
     return Config(
         llm_provider=llm_provider,
         llm_model=llm_model,
@@ -110,4 +118,5 @@ def load_config(
         cache_type=cache_type,
         cache_ttl=cache_ttl,
         cache_path=cache_path,
+        conventions_file=conventions_file,
     )
