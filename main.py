@@ -349,9 +349,21 @@ def design(
             if verbose:
                 console.print(f"\nDesign document saved to: [bold green]{output_file}[/bold green]")
                 
-            # Proceed with analysis if needed
+            # Also save the original document before analysis
+            original_output_file = output_file.with_name(f"{output_file.stem}_original{output_file.suffix}")
+            original_output_file.write_text(design_content)
             if verbose:
-                console.print("\n[bold]Proceeding to analyze the created design document...[/bold]")
+                console.print(f"Original design document saved to: [bold green]{original_output_file}[/bold green]")
+                
+            # Ask if the user wants to continue with phase extraction
+            continue_prompt = typer.confirm("\nDo you want to continue and extract implementation phases?", default=True)
+            if not continue_prompt:
+                console.print("\n[bold green]Interactive session completed.[/bold green] The design document has been saved.")
+                return 0
+                
+            # Proceed with analysis if user confirmed
+            if verbose:
+                console.print("\n[bold]Proceeding to extract implementation phases...[/bold]")
             
         # Get design document content from file or argument
         elif design_doc is None and input_file is None:
@@ -426,6 +438,12 @@ def design(
             
             if verbose:
                 console.print(f"Generated filename based on design summary: [bold]{filename}[/bold]")
+        
+        # Save the original design document before analysis
+        original_output_file = output_file.with_name(f"{output_file.stem}_original{output_file.suffix}")
+        original_output_file.write_text(design_content)
+        if verbose:
+            console.print(f"\nOriginal design document saved to: [bold green]{original_output_file}[/bold green]")
         
         # Progress display setup
         with Progress(

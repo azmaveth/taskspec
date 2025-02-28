@@ -334,7 +334,7 @@ def create_interactive_design(
     
     # Display welcome message
     console.print(Panel(
-        "Welcome to the interactive design document creation process. I'll ask you a series of questions to help create a comprehensive design document.\n\nAvailable commands:\n- Type '/exit', '/quit', or '/done' at any time to end the conversation and generate a document\n- Type '/go', '/create', or '/generate' to immediately generate the design document in a formatted output\n- Type '/threat', '/threats', or '/tm' to start or revisit the threat modeling discussion\n- Type '/criteria' or '/acceptance' to discuss acceptance criteria",
+        "Welcome to the interactive design document creation process. I'll ask you a series of questions to help create a comprehensive design document.\n\nAvailable commands:\n- Type '/exit', '/quit', or '/done' at any time to end the conversation and generate a document\n- Type '/go', '/create', or '/generate' to immediately generate the design document\n- Type '/threat', '/threats', or '/tm' to start or revisit the threat modeling discussion\n- Type '/criteria' or '/acceptance' to discuss acceptance criteria",
         title="Interactive Design Session",
         expand=False
     ))
@@ -359,8 +359,8 @@ def create_interactive_design(
         
         # Check for document generation commands
         elif user_input.lower() in ["/go", "/create", "/generate"]:
-            # Generate the document with special formatting
-            design_document = generate_design_document(messages, llm_config, console, formatted_output=True)
+            # Generate the document
+            design_document = generate_design_document(messages, llm_config, console)
             return design_document
             
         # Check for threat modeling commands
@@ -530,8 +530,7 @@ def generate_design_document(
     messages: List[Dict[str, str]],
     llm_config: Dict[str, Any],
     console: Console,
-    early_exit: bool = False,
-    formatted_output: bool = False
+    early_exit: bool = False
 ) -> str:
     """
     Generate a design document based on the conversation history.
@@ -541,7 +540,6 @@ def generate_design_document(
         llm_config: LLM configuration
         console: Console for output
         early_exit: Whether we're exiting early or have completed the full discussion
-        formatted_output: Whether to return the document in the special format
         
     Returns:
         str: The generated design document
@@ -559,10 +557,6 @@ def generate_design_document(
             date=datetime.now().strftime('%Y-%m-%d')
         )
     
-    # Add special formatting instruction if requested
-    if formatted_output:
-        design_doc_prompt += "\n\nVERY IMPORTANT: Format your response as follows (including the exact backticks and newlines):\n```\n{design-doc}\n```"
-    
     doc_messages = messages.copy()
     doc_messages.append({"role": "user", "content": design_doc_prompt})
     
@@ -576,7 +570,8 @@ def generate_design_document(
     
     console.print("\n[bold green]Design document created successfully![/bold green]")
     
-    return design_document
+    # Ensure we always return a string, not None
+    return design_document or ""
 
 
 def format_subtask_for_analysis(subtask: Dict[str, str]) -> str:

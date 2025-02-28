@@ -61,6 +61,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.local-venv
 
 # mypy
 .mypy_cache/
@@ -91,6 +92,7 @@ Thumbs.db
 specs/
 .taskspec/
 cache.db
+output/*
 
 # uv
 .uv/
