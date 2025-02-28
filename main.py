@@ -164,7 +164,10 @@ def analyze(
                 os.makedirs(output_dir, exist_ok=True)
                 output_file = output_dir / f"{filename}_{timestamp}_spec.md"
             else:
-                output_file = Path(f"{filename}_{timestamp}_spec.md")
+                # Use the configured output directory
+                output_dir = config.output_directory
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = output_dir / f"{filename}_{timestamp}_spec.md"
             
             if verbose:
                 console.print(f"Generated filename based on task summary: [bold]{filename}[/bold]")
@@ -292,7 +295,15 @@ def design(
                     os.makedirs(output_dir, exist_ok=True)
                     output_file = output_dir / f"interactive_design_{timestamp}_design.md"
                 else:
-                    output_file = Path(f"interactive_design_{timestamp}_design.md")
+                    # Use the configured output directory
+                    config = load_config(
+                        provider_override=llm_provider,
+                        model_override=llm_model,
+                        conventions_file_override=conventions_file
+                    )
+                    output_dir = config.output_directory
+                    os.makedirs(output_dir, exist_ok=True)
+                    output_file = output_dir / f"interactive_design_{timestamp}_design.md"
                 
                 if verbose:
                     console.print(f"Generated filename for interactive design: [bold]{output_file}[/bold]")
@@ -408,7 +419,10 @@ def design(
                 os.makedirs(output_dir, exist_ok=True)
                 output_file = output_dir / f"{filename}_{timestamp}_phases.md"
             else:
-                output_file = Path(f"{filename}_{timestamp}_phases.md")
+                # Use the configured output directory
+                output_dir = config.output_directory
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = output_dir / f"{filename}_{timestamp}_phases.md"
             
             if verbose:
                 console.print(f"Generated filename based on design summary: [bold]{filename}[/bold]")
@@ -530,10 +544,18 @@ def split(
         if not phases_file.exists():
             console.print(f"[bold red]Error:[/bold red] Phases file not found: {phases_file}")
             return 1
+        
+        # Load configuration to get default output directory if none provided
+        config = load_config()
+        if output_dir is None:
+            # Use either the same directory as input file or the configured output directory
+            output_dir = config.output_directory
+            os.makedirs(output_dir, exist_ok=True)
             
         # Split the phases file
         if verbose:
             console.print(f"Splitting phases from: [bold]{phases_file}[/bold]")
+            console.print(f"Output directory: [bold]{output_dir}[/bold]")
             
         created_files = split_phases_to_files(
             phases_file=phases_file,

@@ -24,6 +24,9 @@ class Config(BaseModel):
     cohere_api_key: Optional[str] = None
     brave_api_key: Optional[str] = None
     
+    # Output settings
+    output_directory: Path = Path("output")
+    
     # Other settings
     max_search_results: int = 5
     template_path: Optional[Path] = None
@@ -91,6 +94,10 @@ def load_config(
     validation_enabled = os.getenv("VALIDATION_ENABLED", "1").lower() in ("1", "true", "yes", "on")
     max_validation_iterations = int(os.getenv("MAX_VALIDATION_ITERATIONS", "3"))
     
+    # Output directory
+    output_directory = os.getenv("OUTPUT_DIRECTORY", "output")
+    output_directory = Path(output_directory)
+    
     # Cache settings
     cache_enabled = cache_enabled_override if cache_enabled_override is not None else \
                    os.getenv("CACHE_ENABLED", "1").lower() in ("1", "true", "yes", "on")
@@ -119,4 +126,5 @@ def load_config(
         cache_ttl=cache_ttl,
         cache_path=cache_path,
         conventions_file=conventions_file,
+        output_directory=output_directory,
     )
