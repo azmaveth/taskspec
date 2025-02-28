@@ -13,6 +13,13 @@ import statistics
 from taskspec.llm import complete, chat_with_history
 from taskspec.template import get_default_template, render_template, validate_template
 from taskspec.search import search_web
+from taskspec.prompts import (
+    ANALYSIS_SYSTEM_PROMPT,
+    TASK_BREAKDOWN_PROMPT,
+    REFINEMENT_PROMPT,
+    TEMPLATE_FORMAT_PROMPT,
+    VALIDATION_PROMPT
+)
 
 console = Console()
 
@@ -51,95 +58,6 @@ def update_progress_with_eta(
         )
     else:
         progress.update(task_id, completed=percent_complete)
-
-# System prompt for task analysis
-ANALYSIS_SYSTEM_PROMPT = """You are an expert software architect and project planner. Your task is to analyze a project requirement and break it down into detailed, actionable components following a specific specification template.
-
-This includes:
-1. Identifying the high-level objective
-2. Determining mid-level objectives
-3. Providing implementation notes and technical guidance
-4. Specifying beginning and ending context
-5. Breaking down the work into ordered low-level tasks
-
-Be thorough, specific, and practical. Ensure your analysis can be used as a roadmap for actual implementation.
-"""
-
-# Prompt for initial task breakdown
-TASK_BREAKDOWN_PROMPT = """Analyze the following task and break it down into components:
-
-TASK:
-{task}
-
-{additional_context}
-
-Please provide a comprehensive breakdown following this structure:
-1. A clear high-level objective (what we're building)
-2. Mid-level objectives (measurable steps to achieve the high-level goal)
-3. Implementation notes (technical details, dependencies, coding standards)
-4. Beginning and ending context (files that exist at start and end)
-5. Low-level tasks ordered from start to finish, with each task including:
-   - A clear task description
-   - What file to create or update
-   - What function to create or update
-   - Details to drive code changes
-   - Commands to test changes
-
-Be precise and actionable. Your analysis will be used to implement this project.
-"""
-
-# Prompt for refinement
-REFINEMENT_PROMPT = """You've created an initial task breakdown. Now, please review and refine your analysis to ensure:
-
-1. All tasks are clear, specific, and actionable
-2. The implementation notes cover all necessary technical details
-3. The beginning and ending context are complete
-4. Low-level tasks build on each other in a logical sequence
-5. Each task includes specific files and functions to create or update
-6. Test commands are practical and adequate
-
-Here's your initial analysis:
-
-{initial_analysis}
-
-Please provide a refined version that addresses any gaps or improvements needed.
-"""
-
-# Prompt for formatting into template
-TEMPLATE_FORMAT_PROMPT = """
-Format your refined analysis precisely into this specification template:
-
-```markdown
-{template}
-```
-
-For each task in the Low-Level Tasks section, include the `aider` code block with prompts for:
-- What prompt would you run to complete this task?
-- What file do you want to CREATE or UPDATE?
-- What function do you want to CREATE or UPDATE?
-- What are details you want to add to drive the code changes?
-- What command should be run to test that the changes are correct?
-
-Make sure to follow the exact template format, filling in all sections with appropriate content.
-"""
-
-# Prompt for validation
-VALIDATION_PROMPT = """
-Review this specification document to ensure it is complete, actionable, and follows best practices:
-
-{spec_document}
-
-Validation criteria:
-1. High-level objective clearly states what is being built
-2. Mid-level objectives cover all necessary steps to achieve the high-level goal
-3. Implementation notes provide sufficient technical details and dependencies
-4. Beginning and ending contexts are clearly specified
-5. Low-level tasks are ordered logically and build on each other
-6. Each task includes specific files, functions, and test commands
-7. All tasks are actionable and specific
-
-If you find any issues, please identify them and suggest specific improvements. If the specification meets all criteria, confirm it is valid.
-"""
 
 def analyze_task(
     task: str, 

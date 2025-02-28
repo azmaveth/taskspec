@@ -14,69 +14,35 @@ from datetime import datetime
 import typer
 
 from taskspec.llm import complete, chat_with_history
+from taskspec.prompts import (
+    # Design document analysis prompts
+    DESIGN_SYSTEM_PROMPT,
+    DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS,
+    PHASE_EXTRACTION_PROMPT,
+    SUBTASK_GENERATION_PROMPT,
+    
+    # Interactive design prompts
+    INTERACTIVE_DESIGN_SYSTEM_PROMPT,
+    INTERACTIVE_DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS,
+    INTERACTIVE_DESIGN_INITIAL_PROMPT,
+    DESIGN_DOCUMENT_ASSEMBLY_PROMPT,
+    DESIGN_DOC_FULL_PROMPT,
+    DESIGN_DOC_EARLY_EXIT_PROMPT,
+    
+    # Security related prompts
+    SECURITY_DISCUSSION_PROMPT,
+    THREAT_IDENTIFICATION_PROMPT,
+    ADDITIONAL_THREAT_IDENTIFICATION_PROMPT,
+    ADDITIONAL_SECURITY_DISCUSSION_PROMPT,
+    
+    # Acceptance criteria prompts
+    ACCEPTANCE_CRITERIA_PROMPT,
+    ACCEPTANCE_CRITERIA_GENERATION_PROMPT,
+    ADDITIONAL_ACCEPTANCE_CRITERIA_PROMPT,
+    REVISED_ACCEPTANCE_CRITERIA_PROMPT
+)
 
 console = Console()
-
-# System prompt for design document analysis
-DESIGN_SYSTEM_PROMPT = """You are an expert software architect, project planner, and technical lead. 
-Your task is to analyze a software design document and break it down into logical implementation phases, 
-where each phase can be further broken down into specific, actionable tasks.
-
-Focus on producing a structured, practical implementation plan that follows software engineering best practices.
-"""
-
-# System prompt with conventions added
-DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS = """You are an expert software architect, project planner, and technical lead. 
-Your task is to analyze a software design document and break it down into logical implementation phases, 
-where each phase can be further broken down into specific, actionable tasks.
-
-Focus on producing a structured, practical implementation plan that follows software engineering best practices
-and the provided conventions and preferences:
-
-{conventions}
-
-Ensure that your implementation phases and subtasks align with these conventions and preferences.
-"""
-
-# Prompt for extracting phases from design document
-PHASE_EXTRACTION_PROMPT = """Analyze the following design document and break it down into logical implementation phases:
-
-DESIGN DOCUMENT:
-{design_doc}
-
-Please provide:
-1. A clear breakdown of implementation phases (3-6 phases recommended)
-2. For each phase, provide:
-   - A phase name/title
-   - A brief description of the phase's purpose
-   - Key components or features to be implemented in this phase
-   - Dependencies on other phases (if any)
-   - Technical considerations specific to this phase
-
-Focus on a logical progression that builds the system incrementally, ensures testability, and manages complexity.
-"""
-
-# Prompt for generating subtasks for each phase
-SUBTASK_GENERATION_PROMPT = """You've identified the following implementation phase:
-
-PHASE: {phase_name}
-DESCRIPTION: {phase_description}
-KEY COMPONENTS: {phase_components}
-DEPENDENCIES: {phase_dependencies}
-CONSIDERATIONS: {phase_considerations}
-
-Now, please break down this phase into 3-7 specific, actionable subtasks. Each subtask should:
-1. Be focused on a single coherent piece of functionality
-2. Be implementable within 1-3 days of work
-3. Have clear success criteria
-4. Include technical details relevant to implementation
-
-For each subtask, provide:
-- A clear, descriptive title (10 words or less)
-- A detailed description (2-4 sentences)
-- Technical considerations and implementation details
-- Any dependencies on other subtasks
-"""
 
 def analyze_design_document(
     design_doc: str,
@@ -330,91 +296,6 @@ def extract_subtasks(subtasks_text: str) -> List[Dict[str, str]]:
     
     return subtasks
 
-# System prompt for interactive design creation
-INTERACTIVE_DESIGN_SYSTEM_PROMPT = """You are an expert software architect, project planner, and security consultant. 
-Your role is to help users create comprehensive design documents for software projects through interactive dialog.
-You'll guide the conversation to elicit complete project requirements, consider security threats, and establish 
-clear acceptance criteria.
-
-Throughout this conversation:
-1. Ask thoughtful questions to clarify requirements and design considerations
-2. Help identify security threats and discuss risk management approaches
-3. Suggest architecture patterns and best practices when appropriate
-4. Help establish clear acceptance criteria for the project
-5. If the user doesn't have a preference on something, suggest what you consider best practice but note your reasoning
-
-Your goal is to produce a thorough, well-structured design document that can be used as input for further analysis and planning.
-"""
-
-# System prompt for interactive design with conventions
-INTERACTIVE_DESIGN_SYSTEM_PROMPT_WITH_CONVENTIONS = """You are an expert software architect, project planner, and security consultant. 
-Your role is to help users create comprehensive design documents for software projects through interactive dialog.
-You'll guide the conversation to elicit complete project requirements, consider security threats, and establish 
-clear acceptance criteria, while adhering to the following conventions and design preferences:
-
-{conventions}
-
-Throughout this conversation:
-1. Ask thoughtful questions to clarify requirements and design considerations
-2. Help identify security threats and discuss risk management approaches
-3. Suggest architecture patterns and best practices when appropriate, aligned with the provided conventions
-4. Help establish clear acceptance criteria for the project
-5. If the user doesn't have a preference on something, suggest what aligns with the conventions or best practice and note your reasoning
-
-Your goal is to produce a thorough, well-structured design document that can be used as input for further analysis and planning,
-and that follows the specified conventions and design preferences.
-"""
-
-# Initial prompt to start the interactive design process
-INTERACTIVE_DESIGN_INITIAL_PROMPT = """I'll help you create a comprehensive design document for your project through an interactive dialogue. Let's start with the basics and then explore the details.
-
-First, what is the name and high-level purpose of your project? 
-In a few sentences, what problem are you trying to solve?
-"""
-
-# Prompt for security discussion
-SECURITY_DISCUSSION_PROMPT = """Now let's discuss security considerations for your project:
-
-1. What types of data will this system handle? Are there any sensitive or personal data elements?
-2. Who are the intended users, and what authentication/authorization needs exist?
-3. What are the most important security concerns for this type of application?
-
-Based on your project description, I've identified several potential security threats we should discuss:
-{threats}
-
-For each of these threats, we should decide on a risk management strategy:
-- Mitigate: Implement controls to reduce the risk
-- Accept: Acknowledge the risk but take no action
-- Transfer: Shift the risk to another party (e.g., insurance)
-- Avoid: Change the approach to eliminate the risk
-
-Which threats are you most concerned about, and how would you prefer to address them?
-"""
-
-# Prompt for acceptance criteria discussion
-ACCEPTANCE_CRITERIA_PROMPT = """Let's define clear acceptance criteria for your project. These will help determine when the project is complete and successful.
-
-Based on our discussion so far, I'd suggest the following acceptance criteria:
-{suggested_criteria}
-
-Do these align with your expectations? Would you like to modify any of these criteria or add new ones?
-"""
-
-# Final prompt for design document assembly
-DESIGN_DOCUMENT_ASSEMBLY_PROMPT = """Thank you for all this information. I'll now assemble a comprehensive design document for your project based on our discussion.
-
-The document will include:
-- Project overview and objectives
-- Functional requirements
-- Non-functional requirements
-- Architecture overview
-- Security considerations and risk management
-- Acceptance criteria
-- Implementation approach and considerations
-
-Is there anything specific you'd like me to emphasize or any additional sections you'd like included in the design document?
-"""
-
 def create_interactive_design(
     llm_config: Dict[str, Any],
     console: Optional[Console] = None,
@@ -453,7 +334,7 @@ def create_interactive_design(
     
     # Display welcome message
     console.print(Panel(
-        "Welcome to the interactive design document creation process. I'll ask you a series of questions to help create a comprehensive design document.",
+        "Welcome to the interactive design document creation process. I'll ask you a series of questions to help create a comprehensive design document.\n\nAvailable commands:\n- Type '/exit', '/quit', or '/done' at any time to end the conversation and generate a document\n- Type '/go', '/create', or '/generate' to immediately generate the design document in a formatted output\n- Type '/threat', '/threats', or '/tm' to start or revisit the threat modeling discussion\n- Type '/criteria' or '/acceptance' to discuss acceptance criteria",
         title="Interactive Design Session",
         expand=False
     ))
@@ -471,8 +352,39 @@ def create_interactive_design(
         # Get user input
         user_input = typer.prompt("\nYour response")
         
-        if user_input.lower() in ["exit", "quit", "done"]:
+        # Check for slash commands
+        if user_input.lower() in ["/exit", "/quit", "/done"]:
             conversation_complete = True
+            continue
+        
+        # Check for document generation commands
+        elif user_input.lower() in ["/go", "/create", "/generate"]:
+            # Generate the document with special formatting
+            design_document = generate_design_document(messages, llm_config, console, formatted_output=True)
+            return design_document
+            
+        # Check for threat modeling commands
+        elif user_input.lower() in ["/threat", "/threats", "/tm"]:
+            # Extract potential threats based on project details
+            generate_threat_model(messages, llm_config, console, security_discussed)
+            security_discussed = True
+            # Reset acceptance criteria flag if we've already discussed it
+            # This ensures criteria will be revisited after new threats
+            if acceptance_criteria_discussed:
+                acceptance_criteria_discussed = False
+            continue
+            
+        # Check for acceptance criteria commands
+        elif user_input.lower() in ["/criteria", "/acceptance", "/ac"]:
+            # Only proceed if we've already discussed security
+            if not security_discussed:
+                console.print("\n[bold yellow]Note:[/bold yellow] It's recommended to discuss security threats first using /threat, /threats, or /tm")
+                messages.append({"role": "assistant", "content": "It's recommended to discuss security threats first. Would you like to do that now? If so, type /threat. Otherwise, we can continue with the current discussion."})
+                continue
+            
+            # Generate acceptance criteria
+            generate_acceptance_criteria(messages, llm_config, console, acceptance_criteria_discussed)
+            acceptance_criteria_discussed = True
             continue
         
         # Add user message to history
@@ -490,51 +402,14 @@ def create_interactive_design(
         messages.append({"role": "assistant", "content": llm_response})
         console.print(f"\n[bold green]AI:[/bold green] {llm_response}")
         
-        # Check if we should move to security discussion
-        if not security_discussed and len(messages) >= 6:
-            # Extract potential threats based on project details
-            threats_prompt = f"""Based on the project description so far, identify 3-5 potential security threats or risks that should be considered. 
-            For each threat, provide a brief description and potential impact. Format the threats as a bulleted list."""
-            
-            threat_messages = messages.copy()
-            threat_messages.append({"role": "user", "content": threats_prompt})
-            
-            threats_response = chat_with_history(
-                llm_config=llm_config,
-                messages=threat_messages,
-                temperature=0.5
-            )
-            
-            # Present security discussion
-            console.print("\n[bold]Security Considerations:[/bold]")
-            security_prompt = SECURITY_DISCUSSION_PROMPT.format(threats=threats_response)
-            console.print(security_prompt)
-            
-            messages.append({"role": "assistant", "content": security_prompt})
-            security_discussed = True
-        
         # Check if we should move to acceptance criteria
-        elif security_discussed and not acceptance_criteria_discussed and len(messages) >= 10:
-            # Generate suggested acceptance criteria
-            criteria_prompt = f"""Based on our discussion so far, suggest 5-7 clear, measurable acceptance criteria for this project. 
-            Format these as a numbered list with each criterion being specific and testable."""
-            
-            criteria_messages = messages.copy()
-            criteria_messages.append({"role": "user", "content": criteria_prompt})
-            
-            criteria_response = chat_with_history(
-                llm_config=llm_config,
-                messages=criteria_messages,
-                temperature=0.5
-            )
-            
-            # Present acceptance criteria discussion
-            console.print("\n[bold]Acceptance Criteria:[/bold]")
-            acceptance_prompt = ACCEPTANCE_CRITERIA_PROMPT.format(suggested_criteria=criteria_response)
-            console.print(acceptance_prompt)
-            
-            messages.append({"role": "assistant", "content": acceptance_prompt})
-            acceptance_criteria_discussed = True
+        if security_discussed and not acceptance_criteria_discussed and len(messages) >= 10:
+            # Check if the user has been actively contributing to the conversation
+            # Only automatically suggest acceptance criteria if they've been engaged
+            user_messages = [msg for msg in messages if msg.get("role") == "user" and len(msg.get("content", "")) > 20]
+            if len(user_messages) >= 3:  # They've provided at least 3 substantial responses
+                generate_acceptance_criteria(messages, llm_config, console, False)
+                acceptance_criteria_discussed = True
         
         # Check if we should finalize the design document
         elif acceptance_criteria_discussed and not design_document_complete and len(messages) >= 14:
@@ -546,42 +421,147 @@ def create_interactive_design(
         
         # If everything is discussed and user confirms, create the document
         elif design_document_complete and "proceed" in user_input.lower():
-            console.print("\n[bold blue]Generating comprehensive design document...[/bold blue]")
-            
-            # Create the design document assembly prompt
-            design_doc_prompt = f"""Based on our entire conversation, create a comprehensive, professional design document in Markdown format. 
-            Include all the sections we discussed: overview, objectives, requirements, architecture, security, risk management strategies, 
-            acceptance criteria, and implementation approach. Format it professionally with appropriate headers, bullet points, and sections.
-            The document should be titled with the project name and include today's date ({datetime.now().strftime('%Y-%m-%d')}).
-            
-            Make sure to include all the key decisions and preferences stated by the user throughout our conversation.
-            """
-            
-            doc_messages = messages.copy()
-            doc_messages.append({"role": "user", "content": design_doc_prompt})
-            
-            # Generate the document
-            design_document = chat_with_history(
-                llm_config=llm_config,
-                messages=doc_messages,
-                temperature=0.3,
-                max_tokens=4000
-            )
-            
-            console.print("\n[bold green]Design document created successfully![/bold green]")
+            design_document = generate_design_document(messages, llm_config, console)
             conversation_complete = True
-            
             return design_document
     
     # If we exit early, compile what we have
-    console.print("\n[bold blue]Generating design document from available information...[/bold blue]")
-    
-    design_doc_prompt = f"""Based on our conversation so far, create a comprehensive design document in Markdown format.
-    Include as many sections as possible with the information available: overview, objectives, requirements, 
-    architecture, security (if discussed), acceptance criteria (if discussed), and implementation approach.
-    Format it professionally with appropriate headers, bullet points, and sections.
-    The document should be titled with the project name and include today's date ({datetime.now().strftime('%Y-%m-%d')}).
+    return generate_design_document(messages, llm_config, console, early_exit=True)
+
+def generate_acceptance_criteria(
+    messages: List[Dict[str, str]],
+    llm_config: Dict[str, Any],
+    console: Console,
+    previously_discussed: bool = False
+) -> None:
     """
+    Generate acceptance criteria based on the conversation history.
+    Can be called multiple times to revisit criteria after new threats are identified.
+    
+    Args:
+        messages: Conversation history
+        llm_config: LLM configuration
+        console: Console for output
+        previously_discussed: Whether criteria have been previously discussed
+    """
+    console.print("\n[bold blue]Generating acceptance criteria...[/bold blue]")
+    
+    # Create appropriate prompt based on whether we're revisiting or creating initial criteria
+    if previously_discussed:
+        criteria_prompt = ADDITIONAL_ACCEPTANCE_CRITERIA_PROMPT
+    else:
+        criteria_prompt = ACCEPTANCE_CRITERIA_GENERATION_PROMPT
+    
+    criteria_messages = messages.copy()
+    criteria_messages.append({"role": "user", "content": criteria_prompt})
+    
+    criteria_response = chat_with_history(
+        llm_config=llm_config,
+        messages=criteria_messages,
+        temperature=0.5
+    )
+    
+    # Create appropriate discussion prompt
+    console.print("\n[bold]Acceptance Criteria:[/bold]")
+    
+    if previously_discussed:
+        acceptance_prompt = REVISED_ACCEPTANCE_CRITERIA_PROMPT.format(criteria=criteria_response)
+    else:
+        acceptance_prompt = ACCEPTANCE_CRITERIA_PROMPT.format(suggested_criteria=criteria_response)
+        
+    console.print(acceptance_prompt)
+    
+    # Add the prompt to the messages
+    messages.append({"role": "assistant", "content": acceptance_prompt})
+    
+    console.print("\n[bold green]Acceptance criteria generated![/bold green] Please provide your response to these criteria.")
+
+
+def generate_threat_model(
+    messages: List[Dict[str, str]],
+    llm_config: Dict[str, Any],
+    console: Console,
+    previously_discussed: bool = False
+) -> None:
+    """
+    Generate a threat model based on the conversation history and add it to the messages.
+    Can be called multiple times to identify additional threats.
+    
+    Args:
+        messages: Conversation history
+        llm_config: LLM configuration
+        console: Console for output
+        previously_discussed: Whether threats have been previously discussed
+    """
+    console.print("\n[bold blue]Generating threat model...[/bold blue]")
+    
+    # Create appropriate prompt based on whether we're identifying new threats or initial ones
+    if previously_discussed:
+        threats_prompt = ADDITIONAL_THREAT_IDENTIFICATION_PROMPT
+    else:
+        threats_prompt = THREAT_IDENTIFICATION_PROMPT
+    
+    threat_messages = messages.copy()
+    threat_messages.append({"role": "user", "content": threats_prompt})
+    
+    threats_response = chat_with_history(
+        llm_config=llm_config,
+        messages=threat_messages,
+        temperature=0.5
+    )
+    
+    # Create appropriate discussion prompt
+    if previously_discussed:
+        console.print("\n[bold]Additional Security Considerations:[/bold]")
+        security_prompt = ADDITIONAL_SECURITY_DISCUSSION_PROMPT.format(threats=threats_response)
+    else:
+        console.print("\n[bold]Security Considerations:[/bold]")
+        security_prompt = SECURITY_DISCUSSION_PROMPT.format(threats=threats_response)
+    
+    console.print(security_prompt)
+    
+    # Add the prompt to the messages
+    messages.append({"role": "assistant", "content": security_prompt})
+    
+    console.print("\n[bold green]Threat model generated![/bold green] Please provide your response to these security considerations.")
+
+
+def generate_design_document(
+    messages: List[Dict[str, str]],
+    llm_config: Dict[str, Any],
+    console: Console,
+    early_exit: bool = False,
+    formatted_output: bool = False
+) -> str:
+    """
+    Generate a design document based on the conversation history.
+    
+    Args:
+        messages: Conversation history
+        llm_config: LLM configuration
+        console: Console for output
+        early_exit: Whether we're exiting early or have completed the full discussion
+        formatted_output: Whether to return the document in the special format
+        
+    Returns:
+        str: The generated design document
+    """
+    if early_exit:
+        console.print("\n[bold blue]Generating design document from available information...[/bold blue]")
+        
+        design_doc_prompt = DESIGN_DOC_EARLY_EXIT_PROMPT.format(
+            date=datetime.now().strftime('%Y-%m-%d')
+        )
+    else:
+        console.print("\n[bold blue]Generating comprehensive design document...[/bold blue]")
+        
+        design_doc_prompt = DESIGN_DOC_FULL_PROMPT.format(
+            date=datetime.now().strftime('%Y-%m-%d')
+        )
+    
+    # Add special formatting instruction if requested
+    if formatted_output:
+        design_doc_prompt += "\n\nVERY IMPORTANT: Format your response as follows (including the exact backticks and newlines):\n```\n{design-doc}\n```"
     
     doc_messages = messages.copy()
     doc_messages.append({"role": "user", "content": design_doc_prompt})
@@ -597,6 +577,7 @@ def create_interactive_design(
     console.print("\n[bold green]Design document created successfully![/bold green]")
     
     return design_document
+
 
 def format_subtask_for_analysis(subtask: Dict[str, str]) -> str:
     """
