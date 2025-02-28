@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Script to run mutation tests specifically on main.py and utils.py
 after our test improvements.
@@ -8,6 +8,12 @@ import os
 import subprocess
 import sys
 import argparse
+
+# Add parent directory to sys.path so we can import from taskspec
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import Python detector
+from taskspec.python_detector import get_python_command_for_mutmut
 
 
 def parse_args():
@@ -72,14 +78,17 @@ def run_mutation_tests(module, max_mutations):
     update_pyproject_toml(module)
     
     try:
+        # Get mutmut command
+        mutmut_cmd = get_python_command_for_mutmut().split()
+        
         print(f"\n=== Running mutation tests for {module}.py (max: {max_mutations}) ===\n")
         # Run with minimal verbosity
-        cmd = ["mutmut", "run", "--max-children", str(max_mutations)]
+        cmd = mutmut_cmd + ["run", "--max-children", str(max_mutations)]
         result = subprocess.run(cmd, check=False, timeout=300)  # Reduced timeout to 5 minutes
         
         # Run mutmut results to show summary
         print(f"\n=== Results for {module}.py ===\n")
-        subprocess.run(["mutmut", "results"], check=False)
+        subprocess.run(mutmut_cmd + ["results"], check=False)
         
         # Return whether the run was successful
         return result.returncode == 0
@@ -96,8 +105,11 @@ def run_mutation_tests(module, max_mutations):
 
 def generate_report():
     """Generate HTML report for mutation test results."""
+    # Get mutmut command
+    mutmut_cmd = get_python_command_for_mutmut().split()
+    
     print("\n=== Generating HTML report ===\n")
-    subprocess.run(["mutmut", "html"], check=False)
+    subprocess.run(mutmut_cmd + ["html"], check=False)
     print("Report generated. Open htmlcov/mutmut.html to view.")
 
 

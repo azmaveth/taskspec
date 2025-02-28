@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Simple mutation testing script for TaskSpec.
 
@@ -11,6 +11,12 @@ import sys
 import subprocess
 import tempfile
 import shutil
+
+# Add parent directory to sys.path so we can import from taskspec
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import Python detector
+from taskspec.python_detector import get_python_command_for_pytest
 
 
 def make_mutation(mutation_type):
@@ -83,8 +89,12 @@ def restore_backup():
 def run_tests():
     """Run the tests and return whether they passed."""
     try:
+        # Get Python command for pytest
+        pytest_cmd = get_python_command_for_pytest().split()
+        cmd = pytest_cmd + ["tests/test_mutation_example.py", "-v"]
+        
         result = subprocess.run(
-            ["pytest", "tests/test_mutation_example.py", "-v"],
+            cmd,
             capture_output=True,
             text=True,
             check=False

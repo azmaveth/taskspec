@@ -33,7 +33,7 @@ sys.path.insert(0, str(script_dir))
 from taskspec.config import load_config
 from taskspec.llm import setup_llm_client
 from taskspec.analyzer import analyze_task
-from taskspec.design import analyze_design_document, format_subtask_for_analysis
+from taskspec.design import analyze_design_document, format_subtask_for_analysis, create_interactive_design
 from taskspec.template import render_template
 from taskspec.utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
 from taskspec.cache import get_cache_manager
@@ -317,7 +317,7 @@ def design(
             llm_client = setup_llm_client(config, cache_manager)
             
             # Run interactive design session
-            design_content = design.create_interactive_design(llm_client, console, verbose)
+            design_content = create_interactive_design(llm_client, console, verbose)
             
             # Save the design document 
             output_file.write_text(design_content)

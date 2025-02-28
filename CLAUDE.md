@@ -1,51 +1,53 @@
 # TaskSpec Development Guide
 
 ## Build & Run Commands
-- Run application: `python -m taskspec.main`
-- Run specific task: `python -m taskspec.main "Task description"`
-- Run with input file: `python -m taskspec.main --input task.txt`
-- Install dependencies: `uv install` or `pip install -e .`
-- Install dev dependencies: `pip install -e ".[dev]"`
+- Run application: `ts`
+- Run specific task: `ts analyze "Task description"`
+- Run with input file: `ts analyze --input task.txt`
+- Use wrapper script directly: `./bin/ts analyze "Task description"`
+- Install dependencies: `uv pip install -e .` or `pip install -e .`
+- Install dev dependencies: `uv pip install -e ".[dev]"` or `pip install -e ".[dev]"`
+- Install ts command: `python3 bin/install_ts`
 
 ## Testing Commands
-- Run all tests: `pytest`
-- Run specific test module: `pytest tests/test_file.py`
-- Run specific test function: `pytest tests/test_file.py::test_function`
-- Run with coverage: `pytest --cov=taskspec`
-- Generate coverage report: `pytest --cov=taskspec --cov-report=html`
-- Run verbose tests: `pytest -v` 
+- Run all tests: `uv run -m pytest`
+- Run specific test module: `uv run -m pytest tests/test_file.py`
+- Run specific test function: `uv run -m pytest tests/test_file.py::test_function`
+- Run with coverage: `uv run -m pytest --cov=taskspec`
+- Generate coverage report: `uv run -m pytest --cov=taskspec --cov-report=html`
+- Run verbose tests: `uv run -m pytest -v` 
 
 ### Comprehensive Test Script
-Use the comprehensive test script for running tests and cleaning up artifacts:
+Use the run_tests.py script for running tests and cleaning up artifacts:
 - Run unit tests for specific modules: `./run_tests.py --unit --module main utils`
 - Run unit tests with coverage report: `./run_tests.py --unit --all --report`
-- Run mutation tests: `./run_tests.py --mutation --module utils --max-mutations 5` 
 - Clean up test artifacts: `./run_tests.py --clean`
 - Preview cleanup without deleting: `./run_tests.py --clean --dry-run`
 - Full test suite with cleanup: `./run_tests.py --unit --all --report --clean`
 - Use custom output directory: `./run_tests.py --unit --all --output-dir test_results`
 
-All test output files (coverage reports, mutation reports, etc.) will be organized 
-in the "test_output" directory by default to keep the filesystem clean. You can 
-specify a custom output directory with the --output-dir flag.
+All test output files (coverage reports, etc.) will be organized in the "test_output" 
+directory by default to keep the filesystem clean. You can specify a custom output 
+directory with the --output-dir flag.
 
-## Mutation Testing Commands
-- Run mutation tests: `mutmut run`
-- Show mutation test results: `mutmut results`
-- Show specific mutation: `mutmut show <id>`
-- Apply a mutation: `mutmut apply <id>`
-- Generate HTML report: `mutmut html`
+## Simple Mutation Testing Demo
+For a quick demonstration of how mutation testing works, run:
+- `./run_mutation_simple.py`
 
-### Helper Script for Mutation Testing
-- List available modules: `./run_mutation_tests.py --list`
-- Test specific module: `./run_mutation_tests.py <module_name>`
-- Test all modules: `./run_mutation_tests.py --all`
-- Generate HTML report: `./run_mutation_tests.py <module_name> --report`
+This script applies mutations to a sample file and verifies that tests can detect them.
+
+Note: The full mutation testing features requiring mutmut may not be working properly in the 
+current environment. If you need to run mutation tests on actual project files, you'll
+need to install mutmut directly: `uv pip install mutmut` and then run the commands
+manually according to the mutmut documentation.
 
 ## Test Status (as of latest run)
-- Overall coverage: ~90%
+- Overall coverage: ~65%
 - Full coverage: cache/memory_cache.py, cache/base.py, config.py, search.py, template.py
-- High coverage: disk_cache.py (93%), analyzer.py (92%), llm.py (89%), design.py (82%), main.py (92%), utils.py (~92%)
+- High coverage: disk_cache.py (93%), analyzer.py (92%), llm.py (89%)
+- Moderate coverage: utils.py (79%)
+- Lower coverage: design.py (56%), python_detector.py (13%)
+- Not covered: main.py in root directory (0%)
 - Total test count: 151 tests
 
 ## Code Style Guidelines
@@ -58,15 +60,13 @@ specify a custom output directory with the --output-dir flag.
 - Document all functions with docstrings ("""description + Args/Returns""")
 - For imports across modules use `from taskspec.module import X`
 
-## Mutation Testing
-- Basic demo: `./run_mutation_simple.py`
-- Review example mutations in: `docs/mutation_testing_guide.md`
-- Examine our mutation examples in: `mutation_examples.md`
-- See real-world examples in: `mutation_example.py` and `tests/test_mutation_example.py`
-- Run targeted tests on main.py and utils.py: `./run_mutation_main_utils.py`
-  - Test specific module: `./run_mutation_main_utils.py --module main`
-  - Test both modules: `./run_mutation_main_utils.py --module both`
-  - Generate HTML report: `./run_mutation_main_utils.py --report`
+## Python Command Detection
+The `ts` command and test scripts automatically detect the appropriate Python command with this priority:
+1. uv (if available)
+2. python3 (if available)
+3. python (only if it's Python 3.x)
+
+This makes the application and tests work across different Python environments without manual configuration.
 
 ## Architecture Guidelines
 - Modular design with clear separation of concerns

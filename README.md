@@ -34,7 +34,7 @@ uv pip install -e .
 pip install -e .
 
 # Install the 'ts' command to your PATH (recommended)
-python3 bin/install_ts
+bin/install_ts
 ```
 
 The `install_ts` script will:
@@ -188,6 +188,61 @@ Configure API keys for various services:
 - `ANTHROPIC_API_KEY`: Anthropic API key
 - `COHERE_API_KEY`: Cohere API key
 - `BRAVE_API_KEY`: Brave API key (for web search)
+
+## Testing
+
+TaskSpec includes comprehensive test suites that work with different Python environments:
+
+```bash
+# Run all tests directly with pytest
+uv run -m pytest
+
+# Run tests with coverage
+uv run -m pytest --cov=taskspec
+
+# Run a specific test module
+uv run -m pytest tests/test_analyzer.py
+
+# Run a specific test function
+uv run -m pytest tests/test_analyzer.py::test_format_time
+
+# Generate coverage report
+uv run -m pytest --cov=taskspec --cov-report=html
+```
+
+The project also provides a test helper script for additional functionality:
+
+```bash
+# Run unit tests for specific modules
+./run_tests.py --unit --module analyzer utils
+
+# Run all unit tests
+./run_tests.py --unit --all
+
+# Clean up test artifacts
+./run_tests.py --clean
+
+# Preview files to clean without deleting
+./run_tests.py --clean --dry-run
+
+# Use a custom output directory for all test files
+./run_tests.py --unit --all --report --output-dir test_results
+
+# See all testing options
+./run_tests.py --help
+```
+
+For a quick demonstration of mutation testing principles:
+
+```bash
+# Run a simple mutation testing demo
+./run_mutation_simple.py
+```
+
+The test scripts automatically detect and use the appropriate Python command, with the following priority:
+1. uv (if available)
+2. python3 (if available)
+3. python (only if it's Python 3.x)
 
 ## Troubleshooting
 

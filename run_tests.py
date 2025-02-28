@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Comprehensive test script for TaskSpec that can:
 1. Run unit tests for specific modules or all modules
@@ -16,6 +16,12 @@ import re
 import shutil
 from pathlib import Path
 
+# Add parent directory to sys.path so we can import from taskspec
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import Python detector
+from taskspec.python_detector import get_python_command_for_pytest, get_python_command_for_mutmut, detect_python_command
+
 # Directory for test outputs
 TEST_OUTPUT_DIR = "test_output"
 
@@ -28,6 +34,53 @@ TEST_ARTIFACTS = [
     "web_app_*_*_spec.md",
     "*_spec_*.md",
 ]
+
+
+def check_dependencies():
+    """Check if required test dependencies are installed and install them if needed."""
+    required_packages = ["pytest", "pytest-cov", "mutmut", "typer", "rich"]
+    missing_packages = []
+    
+    # Try to import each package
+    for package in required_packages:
+        try:
+            # Try running a simple test to see if pytest is properly installed
+            if package == "pytest":
+                print("Checking for pytest...")
+                __import__("pytest")
+                print("Found pytest!")
+            else:
+                __import__(package.replace("-", "_"))
+        except ImportError:
+            missing_packages.append(package)
+    
+    # Install missing packages
+    if missing_packages:
+        print("Checking for required test dependencies...")
+        print(f"Installing missing dependencies: {', '.join(missing_packages)}")
+        
+        # First try with uv
+        print("Trying installation with uv...")
+        try:
+            cmd = ["uv", "pip", "install"] + missing_packages
+            print(f"Running: {' '.join(cmd)}")
+            subprocess.run(cmd, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # If uv fails, try with regular pip
+            print("uv installation failed, trying with pip...")
+            try:
+                cmd = ["pip", "install"] + missing_packages
+                print(f"Running: {' '.join(cmd)}")
+                subprocess.run(cmd, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # If pip fails, try with pip3
+                print("pip installation failed, trying with pip3...")
+                try:
+                    cmd = ["pip3", "install"] + missing_packages
+                    print(f"Running: {' '.join(cmd)}")
+                    subprocess.run(cmd, check=True)
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    print("Warning: Failed to install required dependencies. Tests may not run correctly.")
 
 
 def parse_args():
@@ -102,22 +155,22 @@ def parse_args():
 def get_all_modules():
     """Get all Python modules in the project, excluding test modules."""
     modules = []
+    package_dir = os.path.join(os.path.dirname(__file__), 'taskspec')
     
-    # Check root directory
-    for file in os.listdir('.'):
+    # Check package root directory
+    for file in os.listdir(package_dir):
         if (file.endswith('.py') and 
             not file.startswith('test_') and 
-            file not in ['setup.py', 'conftest.py', 'run_tests.py', 
-                        'run_mutation_tests.py', 'run_mutation_main_utils.py',
-                        'run_mutation_simple.py']):
+            file not in ['__init__.py', 'conftest.py']):
             modules.append(file[:-3])  # Remove '.py' extension
     
-    # Check subdirectories
+    # Check subdirectories within the package
     for subdir in ['cache']:
-        if os.path.isdir(subdir):
-            for file in os.listdir(subdir):
+        subdir_path = os.path.join(package_dir, subdir)
+        if os.path.isdir(subdir_path):
+            for file in os.listdir(subdir_path):
                 if file.endswith('.py') and not file.startswith('test_') and file != '__init__.py':
-                    modules.append(f"{subdir.replace('/', '.')}.{file[:-3]}")
+                    modules.append(f"{subdir}.{file[:-3]}")
     
     return sorted(modules)
 
@@ -135,6 +188,7 @@ def ensure_test_output_dir(custom_dir=None):
     os.makedirs(output_dir, exist_ok=True)
     return os.path.abspath(output_dir)
 
+
 def run_unit_tests(modules=None, verbose=False, report=False, output_dir=None):
     """Run unit tests for specified modules or all modules.
     
@@ -147,41 +201,39 @@ def run_unit_tests(modules=None, verbose=False, report=False, output_dir=None):
     # Ensure test output directory exists
     output_dir = ensure_test_output_dir(output_dir)
     
-    # Create a junit.xml file for test results
-    junit_path = os.path.join(output_dir, "junit.xml")
-    
-    cmd = ["pytest"]
-    
-    if verbose:
-        cmd.append("-v")
-    
-    # Add junit XML report
-    cmd.extend(["--junitxml", junit_path])
-    
-    if report:
-        html_dir = os.path.join(output_dir, "html_coverage")
-        cmd.extend(["--cov=taskspec", f"--cov-report=html:{html_dir}"])
-    elif modules:
-        cmd.append("--cov=taskspec")
-        cmd.append(f"--cov-report=xml:{os.path.join(output_dir, 'coverage.xml')}")
-    
+    # Gather test paths
+    test_paths = []
     if modules:
         for module in modules:
             if '.' in module:
                 # For submodules like cache.disk_cache
                 parts = module.split('.')
-                module_path = '/'.join(parts)
                 test_path = f"tests/test_{parts[-1]}.py"
             else:
                 test_path = f"tests/test_{module}.py"
             
             if os.path.exists(test_path):
-                cmd.append(test_path)
+                test_paths.append(test_path)
             else:
                 print(f"Warning: Test file {test_path} not found")
+    else:
+        # Add all test files if no specific modules given
+        test_paths.append("tests/")
     
-    print(f"Running unit tests: {' '.join(cmd)}")
-    return subprocess.run(cmd, check=False).returncode == 0
+    # If no test paths found, exit
+    if not test_paths:
+        print("No test files found!")
+        return False
+    
+    # Run tests with pytest via uv
+    success = True
+    for test_path in test_paths:
+        cmd = ["uv", "run", "-m", "pytest", test_path, "-v"]
+        print(f"Running test: {' '.join(cmd)}")
+        result = subprocess.run(cmd)
+        success = success and (result.returncode == 0)
+    
+    return success
 
 
 def run_mutation_tests(modules, max_mutations=10, verbose=False, report=False, output_dir=None):
@@ -222,7 +274,7 @@ def run_mutation_tests(modules, max_mutations=10, verbose=False, report=False, o
         
         try:
             # First use mutmut list to see how many mutations would be generated
-            list_cmd = ["mutmut", "list"]
+            list_cmd = ["uv", "run", "-m", "mutmut", "list"]
             list_process = subprocess.run(list_cmd, capture_output=True, text=True, check=False)
             
             if verbose:
@@ -236,12 +288,12 @@ def run_mutation_tests(modules, max_mutations=10, verbose=False, report=False, o
                 print(f"Found {mutations} potential mutations, will run {actual_mutations}")
             
             # Run a safer subset of mutations
-            cmd = ["mutmut", "run", "--max-mutations", str(actual_mutations)]
+            cmd = ["uv", "run", "-m", "mutmut", "run", "--max-children", str(actual_mutations)]
             if verbose:
                 print(f"Running: {' '.join(cmd)}")
             
             result = subprocess.run(cmd, check=False, timeout=120)  # 2 minute timeout
-            subprocess.run(["mutmut", "results"], check=False)
+            subprocess.run(["uv", "run", "-m", "mutmut", "results"], check=False)
             module_success = result.returncode == 0
             success = success and module_success
             
@@ -261,7 +313,7 @@ def run_mutation_tests(modules, max_mutations=10, verbose=False, report=False, o
     if report:
         print("\n=== Generating HTML report ===\n")
         html_output = os.path.join(mutmut_dir, "html")
-        subprocess.run(["mutmut", "html", "--host-prefix", html_output], check=False)
+        subprocess.run(["uv", "run", "-m", "mutmut", "html", "--host-prefix", html_output], check=False)
         print(f"Report generated. Open {html_output}/mutmut.html to view.")
     
     return success
@@ -275,13 +327,13 @@ def update_pyproject_toml(module_file):
         
         for i, line in enumerate(lines):
             if line.strip().startswith('paths_to_mutate ='):
-                lines[i] = f'paths_to_mutate = "{module_file}"\n'
+                lines[i] = f'paths_to_mutate = "taskspec/{module_file}"\n'
                 break
         
         with open('pyproject.toml', 'w') as f:
             f.writelines(lines)
         
-        print(f"Updated pyproject.toml to target {module_file}")
+        print(f"Updated pyproject.toml to target taskspec/{module_file}")
     except Exception as e:
         print(f"Error updating pyproject.toml: {e}")
 
@@ -294,7 +346,7 @@ def restore_pyproject_toml():
         
         for i, line in enumerate(lines):
             if line.strip().startswith('paths_to_mutate ='):
-                lines[i] = 'paths_to_mutate = "."\n'
+                lines[i] = 'paths_to_mutate = "taskspec/"\n'
                 break
         
         with open('pyproject.toml', 'w') as f:
@@ -368,6 +420,9 @@ def clean_test_artifacts(dry_run=False):
 def main():
     """Main function to run tests based on command line arguments."""
     args = parse_args()
+    
+    # Check for dependencies first
+    check_dependencies()
     
     # Update global TEST_OUTPUT_DIR if custom dir provided
     global TEST_OUTPUT_DIR
