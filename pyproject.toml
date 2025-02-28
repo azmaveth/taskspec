@@ -43,9 +43,9 @@ exclude_lines = [
 ]
 
 [tool.mutmut]
-paths_to_mutate = "."
+paths_to_mutate = "taskspec/cache/base.py"
 backup = false
-runner = "pytest -xvs"
+runner = "pytest -xvs --timeout=10"
 tests_dir = "tests/"
 exclude = """
 tests/

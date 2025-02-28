@@ -24,7 +24,7 @@ TaskSpec is a Python CLI tool that uses LLMs to analyze tasks, break them down i
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/taskspec.git
+git clone https://github.com/azmaveth/taskspec.git
 cd taskspec
 
 # Install dependencies using uv (recommended)
@@ -232,12 +232,30 @@ The project also provides a test helper script for additional functionality:
 ./run_tests.py --help
 ```
 
-For a quick demonstration of mutation testing principles:
+### Mutation Testing
+
+TaskSpec supports mutation testing through both automated and manual approaches:
 
 ```bash
-# Run a simple mutation testing demo
-./run_mutation_simple.py
+# Install mutation testing dependencies in a virtual environment
+uv venv .local-venv
+source .local-venv/bin/activate
+uv pip install mutmut pytest pytest-cov pytest-timeout
+uv pip install -e .
+
+# Run mutation tests on a specific module
+python run_mutation_tests.py --list  # See available modules
+python run_mutation_tests.py cache/base
+
+# Run the simplified manual mutation testing script
+python manual_mutation_test.py
 ```
+
+Mutation testing is useful for evaluating test suite quality by introducing small changes (mutations) to the code and verifying that tests can detect them. The project includes:
+
+- `run_mutation_tests.py`: Configures and runs mutmut-based mutation tests
+- `manual_mutation_test.py`: A more direct approach that applies specific mutations
+- `run_mutation_simple.py`: A quick demonstration of mutation testing principles
 
 The test scripts automatically detect and use the appropriate Python command, with the following priority:
 1. uv (if available)

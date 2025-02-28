@@ -30,16 +30,61 @@ All test output files (coverage reports, etc.) will be organized in the "test_ou
 directory by default to keep the filesystem clean. You can specify a custom output 
 directory with the --output-dir flag.
 
-## Simple Mutation Testing Demo
-For a quick demonstration of how mutation testing works, run:
-- `./run_mutation_simple.py`
+## Mutation Testing
 
-This script applies mutations to a sample file and verifies that tests can detect them.
+### Setup and Installation
+Mutation testing requires specific setup in a controlled environment:
 
-Note: The full mutation testing features requiring mutmut may not be working properly in the 
-current environment. If you need to run mutation tests on actual project files, you'll
-need to install mutmut directly: `uv pip install mutmut` and then run the commands
-manually according to the mutmut documentation.
+```bash
+# Create a dedicated virtual environment for mutation testing
+uv venv .local-venv
+source .local-venv/bin/activate
+
+# Install required packages
+uv pip install mutmut pytest pytest-cov pytest-timeout
+uv pip install -e .
+```
+
+### Running Mutation Tests
+The project offers several ways to run mutation tests:
+
+```bash
+# List available modules for testing
+python run_mutation_tests.py --list
+
+# Run mutation tests on a specific module
+python run_mutation_tests.py cache/base
+
+# Run with report generation
+python run_mutation_tests.py cache/base --report
+
+# Limit the number of mutations to test
+python run_mutation_tests.py cache/base --max-mutations 5
+```
+
+### Manual Mutation Testing
+If you experience issues with mutmut or prefer more control, use the manual approach:
+
+```bash
+# Run the manual mutation testing script
+python manual_mutation_test.py
+```
+
+This script applies pre-defined mutations to code files and runs targeted tests to check if they detect the changes. It provides a detailed report of which mutations were caught by the tests.
+
+### Quick Demo
+For a simple demonstration of mutation testing principles:
+
+```bash
+# Run a quick mutation testing demo
+./run_mutation_simple.py
+```
+
+### Troubleshooting
+- If mutmut gets stuck at "Generating mutants", try using the manual testing script instead
+- For timeout issues, edit pyproject.toml to increase timeout values
+- Test individual mutations directly with pytest to verify test coverage
+- Make sure you're using a dedicated virtual environment to avoid package conflicts
 
 ## Test Status (as of latest run)
 - Overall coverage: ~65%

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Helper script to run mutation tests on specific modules
 and summarize the results.
@@ -120,10 +120,9 @@ def run_mutation_tests(module=None, max_mutations=10):
     if module:
         update_setup_cfg_for_module(module)
     
-    # Get mutmut command
-    mutmut_cmd = get_python_command_for_mutmut().split()
-    
-    cmd = mutmut_cmd + ["run", "--max-children", str(max_mutations)]
+    # Use 'python -m mutmut' directly instead of relying on the detector function
+    # This is more reliable in a virtual environment
+    cmd = [sys.executable, "-m", "mutmut", "run", "--max-children", str(max_mutations)]
     print(f"Running: {' '.join(cmd)}")
     
     # Set a timeout of 5 minutes
@@ -132,7 +131,7 @@ def run_mutation_tests(module=None, max_mutations=10):
         
         # Run mutmut results to show summary
         print("\nSummary of results:")
-        subprocess.run(mutmut_cmd + ["results"], check=False)
+        subprocess.run([sys.executable, "-m", "mutmut", "results"], check=False)
     except subprocess.TimeoutExpired:
         print("\nMutation testing timed out after 5 minutes.")
         print("Try reducing the number of mutations with --max-mutations option.")
@@ -165,11 +164,9 @@ def update_setup_cfg_for_module(module):
 
 def generate_report():
     """Generate HTML report for mutation test results."""
-    # Get mutmut command
-    mutmut_cmd = get_python_command_for_mutmut().split()
-    
+    # Use 'python -m mutmut' directly instead of relying on the detector function
     print("Generating HTML report...")
-    subprocess.run(mutmut_cmd + ["html"], check=False)
+    subprocess.run([sys.executable, "-m", "mutmut", "html"], check=False)
     print("Report generated. Open htmlcov/mutmut.html to view.")
 
 
