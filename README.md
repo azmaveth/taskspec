@@ -27,10 +27,16 @@ TaskSpec is a Python CLI tool that uses LLMs to analyze tasks, break them down i
 git clone https://github.com/azmaveth/taskspec.git
 cd taskspec
 
-# Install dependencies using uv (recommended)
+# Create and activate a virtual environment with uv (recommended)
+uv venv
+source .venv/bin/activate
+
+# Install dependencies using uv
 uv pip install -e .
 
-# Or using standard pip
+# Or using standard pip with venv
+python -m venv .venv
+source .venv/bin/activate
 pip install -e .
 
 # Install the 'ts' command to your PATH (recommended)
@@ -40,6 +46,8 @@ bin/install_ts
 cp .env.example .env
 # Edit the .env file with your preferred settings
 ```
+
+> **Note:** Activating the virtual environment is only needed during installation. Once you've installed the `ts` command using `bin/install_ts`, you can run TaskSpec commands without activating the virtual environment first.
 
 The `install_ts` script will:
 1. Create a wrapper script named `ts` in your user's bin directory
