@@ -35,6 +35,10 @@ pip install -e .
 
 # Install the 'ts' command to your PATH (recommended)
 bin/install_ts
+
+# Copy the example environment file and configure it
+cp .env.example .env
+# Edit the .env file with your preferred settings
 ```
 
 The `install_ts` script will:
@@ -174,7 +178,7 @@ TaskSpec can be configured using:
 
 ### Using a .env File
 
-The easiest way to configure TaskSpec is to copy the provided `.env.example` file to `.env` and modify it as needed:
+**Important:** TaskSpec uses environment variables for configuration. The easiest way to set these up is to copy the provided `.env.example` file to `.env` and modify it as needed:
 
 ```bash
 # Copy the example file
