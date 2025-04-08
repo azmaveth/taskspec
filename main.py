@@ -29,19 +29,17 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeEl
 script_dir = Path(__file__).resolve().parent
 sys.path.insert(0, str(script_dir))
 
-# Import from the taskspec package
+# Save to file if requested
 from taskspec.config import load_config
-from taskspec.llm import setup_llm_client
-from taskspec.analyzer import analyze_task
-from taskspec.design import analyze_design_document, format_subtask_for_analysis, create_interactive_design
-from taskspec.template import render_template
-from taskspec.utils import sanitize_filename, format_design_results, generate_task_summary, split_phases_to_files
+# Save to file if requested
 from taskspec.cache import get_cache_manager
+from taskspec.llm import setup_llm_client
+from taskspec.design import analyze_design_document, format_subtask_for_analysis
+from taskspec.utils import generate_task_summary, split_phases_to_files, format_design_results, sanitize_filename
+from taskspec.analyzer import analyze_task
 
-# Initialize Typer app
-app = typer.Typer(help="Task analysis and specification generator using LLMs")
 console = Console()
-
+app = typer.Typer()
 @app.command()
 def analyze(
     task: Optional[str] = typer.Argument(None, help="The task to analyze"),
@@ -87,15 +85,14 @@ def analyze(
 ):
     """
     Analyze a task, break it down into subtasks, and generate a specification document.
-    
+
     The task can be provided directly as an argument or read from a file.
     """
     try:
-        # Get task content
         if task is None and input_file is None:
             console.print("[bold red]Error:[/bold red] Either task or input file must be provided.")
             return 1
-            
+
         if input_file is not None:
             if not input_file.exists():
                 console.print(f"[bold red]Error:[/bold red] Input file not found: {input_file}")
@@ -105,8 +102,7 @@ def analyze(
                 console.print(f"Task loaded from: [bold]{input_file}[/bold]")
         else:
             task_content = task
-        
-        # Load template if provided
+
         custom_template = None
         if template_path is not None:
             if not template_path.exists():
@@ -115,22 +111,20 @@ def analyze(
             custom_template = template_path.read_text()
             if verbose:
                 console.print(f"Template loaded from: [bold]{template_path}[/bold]")
-        
-        # Load configuration
+
         config = load_config(
-            provider_override=llm_provider, 
+            provider_override=llm_provider,
             model_override=llm_model,
             cache_enabled_override=cache_enabled,
             cache_type_override=cache_type,
             cache_ttl_override=cache_ttl
         )
-        
+
         if verbose:
             console.print(f"Using LLM provider: [bold]{config.llm_provider}[/bold] with model: [bold]{config.llm_model}[/bold]")
             if config.cache_enabled:
                 console.print(f"Caching enabled: [bold]{config.cache_type}[/bold] with TTL: [bold]{config.cache_ttl}s[/bold]")
-        
-        # Setup cache if enabled
+
         cache_manager = None
         if config.cache_enabled:
             cache_manager = get_cache_manager(
@@ -138,87 +132,79 @@ def analyze(
                 cache_path=config.cache_path,
                 ttl=config.cache_ttl
             )
-            
+
             if clear_cache:
                 if verbose:
                     console.print("[bold yellow]Clearing cache...[/bold yellow]")
                 cache_manager.clear()
-            
+
             if verbose:
                 stats = cache_manager.get_stats()
                 console.print(f"Cache statistics: {stats['entries']} entries, {stats['hits']} hits, {stats['misses']} misses")
-        
-        # Setup LLM client
+
         llm_client = setup_llm_client(config, cache_manager)
-        
-        # Generate auto filename if none provided
+
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            # Generate a summary of the task for the filename
             filename = generate_task_summary(task_content, llm_client)
             filename = sanitize_filename(filename)
-            
-            # If we're running in a test environment, use test_output directory
+
             if 'pytest' in sys.modules:
                 output_dir = Path("test_output")
                 os.makedirs(output_dir, exist_ok=True)
                 output_file = output_dir / f"{filename}_{timestamp}_spec.md"
             else:
-                # Use the configured output directory
                 output_dir = config.output_directory
                 os.makedirs(output_dir, exist_ok=True)
                 output_file = output_dir / f"{filename}_{timestamp}_spec.md"
-            
+
             if verbose:
                 console.print(f"Generated filename based on task summary: [bold]{filename}[/bold]")
-        
-        # Progress display setup
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[bold blue]{task.description}[/bold blue]"),
             BarColumn(bar_width=40),
             TextColumn("[bold]{task.percentage:.0f}%[/bold]"),
             TimeElapsedColumn(),
-            TimeRemainingColumn(),  # Use Rich's built-in remaining time column
+            TimeRemainingColumn(),
             console=console,
             transient=not verbose,
             expand=True,
-            refresh_per_second=10  # Increase refresh rate for smoother updates
+            refresh_per_second=10
         ) as progress:
-            # Analyze task
             if verbose:
-                console.print(Panel(task_content[:200] + "..." if len(task_content) > 200 else task_content, 
-                                  title="Task Description"))
-            
+                console.print(Panel(task_content[:200] + "..." if len(task_content) > 200 else task_content,
+                                    title="Task Description"))
+
             spec_content = analyze_task(
-                task_content, 
-                llm_client, 
+                task_content,
+                llm_client,
                 progress=progress,
                 custom_template=custom_template,
-                search_enabled=search, 
+                search_enabled=search,
                 validate=validate,
                 verbose=verbose
             )
-        
-        # Output results
+
         if not no_stdout:
             console.print(spec_content)
-        
-        # Save to file if requested
+
         if output_file:
+            output_file.parent.mkdir(parents=True, exist_ok=True)
             output_file.write_text(spec_content)
-            if verbose or not no_stdout:
+            if verbose:
+                console.print(f"[debug] Writing output to: {output_file}")
                 console.print(f"\nSpecification saved to: [bold green]{output_file}[/bold green]")
-        
+
         return 0
-    
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
         if verbose:
             import traceback
             console.print(traceback.format_exc())
         return 1
-
 @app.command()
 def design(
     design_doc: Optional[str] = typer.Argument(None, help="The design document text"),

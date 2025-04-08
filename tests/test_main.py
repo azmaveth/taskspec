@@ -172,12 +172,13 @@ def test_design_command(
     # Verify the function calls
     mock_load_config.assert_called_once()
     mock_setup_llm.assert_called_once()
-    mock_analyze_design.assert_called_once_with(
-        "Create a weather monitoring system",
-        mock_llm_client,
-        progress=ANY,
-        verbose=False
-    )
+    mock_analyze_design.assert_called_once()
+    args, kwargs = mock_analyze_design.call_args
+    assert args[0] == "Create a weather monitoring system"
+    assert args[1] == mock_llm_client
+    assert "progress" in kwargs
+    assert kwargs["verbose"] is False
+    assert "conventions_file" in kwargs
     mock_format_results.assert_called_once_with(
         {"phases": []}, 
         "markdown",
@@ -222,7 +223,7 @@ def test_split_command(mock_split_phases, runner, tmp_path):
     # Verify the function calls
     mock_split_phases.assert_called_once_with(
         phases_file=phases_file,
-        output_dir=None,
+        output_dir=Path('output'),
         prefix=None
     )
 
@@ -869,9 +870,10 @@ def test_design_with_auto_filename(
         assert result.exit_code == 0
         
         # Verify an auto-generated filename was used
-        mock_write_text.assert_called_once()
-        # The first arg to write_text is the content to write
-        assert mock_write_text.call_args[0][0] == "Mock design results"
+        calls = mock_write_text.call_args_list
+        assert len(calls) == 2
+        assert calls[0][0][0] == "Create a weather monitoring system"
+        assert calls[1][0][0] == "Mock design results"
         
         # Verify the filename in the output
         assert "weather_monitoring_system_20250101_120000_phases.md" in result.stdout
