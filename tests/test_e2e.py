@@ -4,10 +4,16 @@ from pathlib import Path
 import os
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    "OPENAI_API_KEY" not in os.environ,
-    reason="Skipping E2E tests because no API key is configured"
-)
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-e2e", action="store_true", default=False, help="Run end-to-end tests"
+    )
+
+
+def pytest_runtest_setup(item):
+    if "run_e2e" not in item.config.option or not item.config.getoption("run_e2e"):
+        if "test_e2e" in str(item.fspath):
+            pytest.skip("Skipping E2E tests (use --run-e2e to enable)")
 
 def test_analyze_basic(tmp_path):
     output_file = tmp_path / "spec.md"
@@ -17,7 +23,7 @@ def test_analyze_basic(tmp_path):
         "--output", str(output_file),
         "--no-stdout"
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
     assert result.returncode == 0, f"Non-zero exit: {result.stderr}"
     assert output_file.exists(), "Output file was not created"
     content = output_file.read_text()
@@ -32,20 +38,20 @@ def test_design_basic(tmp_path):
         "--output", str(output_file),
         "--no-stdout"
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
     assert result.returncode == 0, f"Non-zero exit: {result.stderr}"
     assert output_file.exists(), "Output file was not created"
     content = output_file.read_text()
     assert "calculator" in content or "design" in content
 def test_help_command():
     cmd = [sys.executable, "-m", "taskspec.main", "--help"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
     assert result.returncode == 0
     assert "Usage" in result.stdout or "usage" in result.stdout
 
 def test_invalid_command():
     cmd = [sys.executable, "-m", "taskspec.main", "nonexistentcommand"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
     assert result.returncode != 0
     assert "No such command" in result.stderr or "Error" in result.stderr
 
@@ -58,7 +64,7 @@ def test_split_phases(tmp_path):
         "--output", str(design_file),
         "--no-stdout"
     ]
-    result_design = subprocess.run(cmd_design, capture_output=True, text=True)
+    result_design = subprocess.run(cmd_design, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
     assert result_design.returncode == 0
     assert design_file.exists()
 
@@ -68,7 +74,7 @@ def test_split_phases(tmp_path):
         str(design_file),
         "--output-dir", str(tmp_path / "phases")
     ]
-    result_split = subprocess.run(cmd_split, capture_output=True, text=True)
+    result_split = subprocess.run(cmd_split, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
     assert result_split.returncode == 0
     phases_dir = tmp_path / "phases"
     assert phases_dir.exists()
