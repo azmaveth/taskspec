@@ -125,4 +125,27 @@ This makes the application and tests work across different Python environments w
 - Mock external dependencies (especially LLM calls)
 - Use pytest fixtures for common test setup
 - Include tests for edge cases and error handling
-- Use patch decorators for mocking functions
+- Use patch decorators for mocking functions## Additional Notes for LLM Coding Agents
+
+- **End-to-End (E2E) Tests:**  
+  These tests invoke the CLI via subprocess calls. They are **skipped automatically if no API key is configured** to avoid failures when LLM access is unavailable. Without API keys, subprocess calls will not generate output files.
+
+- **Coverage Configuration:**  
+  The `.coveragerc` file excludes test fixtures and setup files (e.g., `fixtures.py`, `conftest.py`) from coverage reports. Use the following command to generate an accurate coverage report:  
+  ```bash
+  pytest --cov=taskspec --cov-config=.coveragerc --cov-report=term-missing
+  ```
+
+- **Environment Setup:**  
+  To enable full E2E testing, ensure valid API keys are set in `.env` or environment variables. Otherwise, expect E2E tests to be skipped.
+
+- **Testing Workflow:**  
+  1. Run **unit tests** to verify core logic.  
+  2. Run **mutation tests** to assess test suite quality.  
+  3. Run **E2E tests** (only if API keys are configured).
+
+- **Focus of Coverage:**  
+  Coverage targets **core application code**. Test scaffolding and fixtures are excluded to provide a more accurate picture.
+
+- **Repository Context:**  
+  If starting fresh, check for `.env.example` and `.coveragerc` files to configure environment and coverage properly.

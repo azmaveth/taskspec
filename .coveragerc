@@ -1,0 +1,13 @@
+[run]
+omit =
+    */tests/fixtures.py
+    */tests/conftest.py
+    */tests/__init__.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    except ImportError
+    except ModuleNotFoundError

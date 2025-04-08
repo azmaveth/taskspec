@@ -312,3 +312,19 @@ The test scripts automatically detect and use the appropriate Python command, wi
 ## License
 
 [MIT License](LICENSE.md)
+## Testing Notes
+
+- **End-to-End (E2E) Tests:**  
+  E2E tests invoke the CLI via subprocess calls. They are **skipped automatically if no API key is configured** to avoid failures when LLM access is unavailable.
+
+- **Coverage Configuration:**  
+  A `.coveragerc` file is included to **exclude test fixtures and setup files** (e.g., `fixtures.py`, `conftest.py`) from coverage reports. This provides a more accurate measurement of production code coverage.
+
+- **Running Coverage:**  
+  To generate a coverage report respecting these exclusions, use:  
+  ```bash
+  pytest --cov=taskspec --cov-config=.coveragerc --cov-report=term-missing
+  ```
+
+- **Coverage Status:**  
+  As of April 2025, overall coverage is approximately **75%**, focusing on core application code.
