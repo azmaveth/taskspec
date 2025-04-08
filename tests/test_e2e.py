@@ -43,6 +43,26 @@ def test_design_basic(tmp_path):
     assert output_file.exists(), "Output file was not created"
     content = output_file.read_text()
     assert "calculator" in content or "design" in content
+def test_design_interactive(tmp_path):
+    output_file = tmp_path / "design_interactive.md"
+    cmd = [
+        sys.executable, "-m", "taskspec.main", "design",
+        "--output", str(output_file),
+        "--no-stdout"
+    ]
+    # Simulate interactive input
+    user_input = "Design a calculator interactively\n"
+    result = subprocess.run(
+        cmd,
+        input=user_input,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "LLM_MODEL": "llama3.2:latest"}
+    )
+    assert result.returncode == 0, f"Non-zero exit: {result.stderr}"
+    assert output_file.exists(), "Output file was not created"
+    content = output_file.read_text()
+    assert "calculator" in content or "design" in content
 def test_help_command():
     cmd = [sys.executable, "-m", "taskspec.main", "--help"]
     result = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "LLM_MODEL": "llama3.2:latest"})
